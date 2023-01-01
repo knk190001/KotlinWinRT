@@ -1,0 +1,95 @@
+{
+  "Name": "IVectorView`1",
+  "Namespace": "Windows.Foundation.Collections",
+  "Guid": "bbe1fa4cb0e34583baef1f1b2e483e56",
+  "Methods": [
+    {
+      "Name": "GetAt",
+      "Parameters": [
+        {
+          "Name": "index",
+          "Type": {
+            "Name": "UInt32",
+            "Namespace": "System",
+            "GenericParameters": null
+          }
+        }
+      ],
+      "ReturnType": {
+        "Name": "T",
+        "Namespace": "",
+        "GenericParameters": null
+      }
+    },
+    {
+      "Name": "get_Size",
+      "Parameters": [],
+      "ReturnType": {
+        "Name": "UInt32",
+        "Namespace": "System",
+        "GenericParameters": null
+      }
+    },
+    {
+      "Name": "IndexOf",
+      "Parameters": [
+        {
+          "Name": "value",
+          "Type": {
+            "Name": "T",
+            "Namespace": "",
+            "GenericParameters": null
+          }
+        },
+        {
+          "Name": "index",
+          "Type": {
+            "Name": "UInt32&",
+            "Namespace": "System",
+            "GenericParameters": null
+          }
+        }
+      ],
+      "ReturnType": {
+        "Name": "Boolean",
+        "Namespace": "System",
+        "GenericParameters": null
+      }
+    },
+    {
+      "Name": "GetMany",
+      "Parameters": [
+        {
+          "Name": "startIndex",
+          "Type": {
+            "Name": "UInt32",
+            "Namespace": "System",
+            "GenericParameters": null
+          }
+        },
+        {
+          "Name": "items",
+          "Type": {
+            "Name": "T[]",
+            "Namespace": "",
+            "GenericParameters": null
+          }
+        }
+      ],
+      "ReturnType": {
+        "Name": "UInt32",
+        "Namespace": "System",
+        "GenericParameters": null
+      }
+    }
+  ],
+  "Traits": [],
+  "GenericParameters": [
+    {
+      "Name": "T",
+      "Position": 0,
+      "Type": null
+    }
+  ],
+  "Type": "Interface"
+}

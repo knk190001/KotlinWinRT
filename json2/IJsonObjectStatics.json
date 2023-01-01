@@ -1,0 +1,54 @@
+{
+  "Name": "IJsonObjectStatics",
+  "Namespace": "Windows.Data.Json",
+  "Guid": "2289f15954de45d8abcc22603fa066a0",
+  "Methods": [
+    {
+      "Name": "Parse",
+      "Parameters": [
+        {
+          "Name": "input",
+          "Type": {
+            "Name": "String",
+            "Namespace": "System",
+            "GenericParameters": null
+          }
+        }
+      ],
+      "ReturnType": {
+        "Name": "JsonObject",
+        "Namespace": "Windows.Data.Json",
+        "GenericParameters": null
+      }
+    },
+    {
+      "Name": "TryParse",
+      "Parameters": [
+        {
+          "Name": "input",
+          "Type": {
+            "Name": "String",
+            "Namespace": "System",
+            "GenericParameters": null
+          }
+        },
+        {
+          "Name": "result",
+          "Type": {
+            "Name": "JsonObject&",
+            "Namespace": "Windows.Data.Json",
+            "GenericParameters": null
+          }
+        }
+      ],
+      "ReturnType": {
+        "Name": "Boolean",
+        "Namespace": "System",
+        "GenericParameters": null
+      }
+    }
+  ],
+  "Traits": [],
+  "GenericParameters": null,
+  "Type": "Interface"
+}

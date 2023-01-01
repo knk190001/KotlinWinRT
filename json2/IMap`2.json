@@ -1,0 +1,147 @@
+{
+  "Name": "IMap`2",
+  "Namespace": "Windows.Foundation.Collections",
+  "Guid": "3c2925fe851945c1aa79197b6718c1c1",
+  "Methods": [
+    {
+      "Name": "Lookup",
+      "Parameters": [
+        {
+          "Name": "key",
+          "Type": {
+            "Name": "K",
+            "Namespace": "",
+            "GenericParameters": null
+          }
+        }
+      ],
+      "ReturnType": {
+        "Name": "V",
+        "Namespace": "",
+        "GenericParameters": null
+      }
+    },
+    {
+      "Name": "get_Size",
+      "Parameters": [],
+      "ReturnType": {
+        "Name": "UInt32",
+        "Namespace": "System",
+        "GenericParameters": null
+      }
+    },
+    {
+      "Name": "HasKey",
+      "Parameters": [
+        {
+          "Name": "key",
+          "Type": {
+            "Name": "K",
+            "Namespace": "",
+            "GenericParameters": null
+          }
+        }
+      ],
+      "ReturnType": {
+        "Name": "Boolean",
+        "Namespace": "System",
+        "GenericParameters": null
+      }
+    },
+    {
+      "Name": "GetView",
+      "Parameters": [],
+      "ReturnType": {
+        "Name": "IMapView`2",
+        "Namespace": "Windows.Foundation.Collections",
+        "GenericParameters": [
+          {
+            "Name": "K",
+            "Position": 0,
+            "Type": {
+              "Name": "K",
+              "Namespace": "",
+              "GenericParameters": null
+            }
+          },
+          {
+            "Name": "V",
+            "Position": 1,
+            "Type": {
+              "Name": "V",
+              "Namespace": "",
+              "GenericParameters": null
+            }
+          }
+        ]
+      }
+    },
+    {
+      "Name": "Insert",
+      "Parameters": [
+        {
+          "Name": "key",
+          "Type": {
+            "Name": "K",
+            "Namespace": "",
+            "GenericParameters": null
+          }
+        },
+        {
+          "Name": "value",
+          "Type": {
+            "Name": "V",
+            "Namespace": "",
+            "GenericParameters": null
+          }
+        }
+      ],
+      "ReturnType": {
+        "Name": "Boolean",
+        "Namespace": "System",
+        "GenericParameters": null
+      }
+    },
+    {
+      "Name": "Remove",
+      "Parameters": [
+        {
+          "Name": "key",
+          "Type": {
+            "Name": "K",
+            "Namespace": "",
+            "GenericParameters": null
+          }
+        }
+      ],
+      "ReturnType": {
+        "Name": "Void",
+        "Namespace": "System",
+        "GenericParameters": null
+      }
+    },
+    {
+      "Name": "Clear",
+      "Parameters": [],
+      "ReturnType": {
+        "Name": "Void",
+        "Namespace": "System",
+        "GenericParameters": null
+      }
+    }
+  ],
+  "Traits": [],
+  "GenericParameters": [
+    {
+      "Name": "K",
+      "Position": 0,
+      "Type": null
+    },
+    {
+      "Name": "V",
+      "Position": 1,
+      "Type": null
+    }
+  ],
+  "Type": "Interface"
+}

@@ -1,0 +1,238 @@
+{
+  "Name": "IVector`1",
+  "Namespace": "Windows.Foundation.Collections",
+  "Guid": "913337e911a14345a3a24e7f956e222d",
+  "Methods": [
+    {
+      "Name": "GetAt",
+      "Parameters": [
+        {
+          "Name": "index",
+          "Type": {
+            "Name": "UInt32",
+            "Namespace": "System",
+            "GenericParameters": null
+          }
+        }
+      ],
+      "ReturnType": {
+        "Name": "T",
+        "Namespace": "",
+        "GenericParameters": null
+      }
+    },
+    {
+      "Name": "get_Size",
+      "Parameters": [],
+      "ReturnType": {
+        "Name": "UInt32",
+        "Namespace": "System",
+        "GenericParameters": null
+      }
+    },
+    {
+      "Name": "GetView",
+      "Parameters": [],
+      "ReturnType": {
+        "Name": "IVectorView`1",
+        "Namespace": "Windows.Foundation.Collections",
+        "GenericParameters": [
+          {
+            "Name": "T",
+            "Position": 0,
+            "Type": {
+              "Name": "T",
+              "Namespace": "",
+              "GenericParameters": null
+            }
+          }
+        ]
+      }
+    },
+    {
+      "Name": "IndexOf",
+      "Parameters": [
+        {
+          "Name": "value",
+          "Type": {
+            "Name": "T",
+            "Namespace": "",
+            "GenericParameters": null
+          }
+        },
+        {
+          "Name": "index",
+          "Type": {
+            "Name": "UInt32&",
+            "Namespace": "System",
+            "GenericParameters": null
+          }
+        }
+      ],
+      "ReturnType": {
+        "Name": "Boolean",
+        "Namespace": "System",
+        "GenericParameters": null
+      }
+    },
+    {
+      "Name": "SetAt",
+      "Parameters": [
+        {
+          "Name": "index",
+          "Type": {
+            "Name": "UInt32",
+            "Namespace": "System",
+            "GenericParameters": null
+          }
+        },
+        {
+          "Name": "value",
+          "Type": {
+            "Name": "T",
+            "Namespace": "",
+            "GenericParameters": null
+          }
+        }
+      ],
+      "ReturnType": {
+        "Name": "Void",
+        "Namespace": "System",
+        "GenericParameters": null
+      }
+    },
+    {
+      "Name": "InsertAt",
+      "Parameters": [
+        {
+          "Name": "index",
+          "Type": {
+            "Name": "UInt32",
+            "Namespace": "System",
+            "GenericParameters": null
+          }
+        },
+        {
+          "Name": "value",
+          "Type": {
+            "Name": "T",
+            "Namespace": "",
+            "GenericParameters": null
+          }
+        }
+      ],
+      "ReturnType": {
+        "Name": "Void",
+        "Namespace": "System",
+        "GenericParameters": null
+      }
+    },
+    {
+      "Name": "RemoveAt",
+      "Parameters": [
+        {
+          "Name": "index",
+          "Type": {
+            "Name": "UInt32",
+            "Namespace": "System",
+            "GenericParameters": null
+          }
+        }
+      ],
+      "ReturnType": {
+        "Name": "Void",
+        "Namespace": "System",
+        "GenericParameters": null
+      }
+    },
+    {
+      "Name": "Append",
+      "Parameters": [
+        {
+          "Name": "value",
+          "Type": {
+            "Name": "T",
+            "Namespace": "",
+            "GenericParameters": null
+          }
+        }
+      ],
+      "ReturnType": {
+        "Name": "Void",
+        "Namespace": "System",
+        "GenericParameters": null
+      }
+    },
+    {
+      "Name": "RemoveAtEnd",
+      "Parameters": [],
+      "ReturnType": {
+        "Name": "Void",
+        "Namespace": "System",
+        "GenericParameters": null
+      }
+    },
+    {
+      "Name": "Clear",
+      "Parameters": [],
+      "ReturnType": {
+        "Name": "Void",
+        "Namespace": "System",
+        "GenericParameters": null
+      }
+    },
+    {
+      "Name": "GetMany",
+      "Parameters": [
+        {
+          "Name": "startIndex",
+          "Type": {
+            "Name": "UInt32",
+            "Namespace": "System",
+            "GenericParameters": null
+          }
+        },
+        {
+          "Name": "items",
+          "Type": {
+            "Name": "T[]",
+            "Namespace": "",
+            "GenericParameters": null
+          }
+        }
+      ],
+      "ReturnType": {
+        "Name": "UInt32",
+        "Namespace": "System",
+        "GenericParameters": null
+      }
+    },
+    {
+      "Name": "ReplaceAll",
+      "Parameters": [
+        {
+          "Name": "items",
+          "Type": {
+            "Name": "T[]",
+            "Namespace": "",
+            "GenericParameters": null
+          }
+        }
+      ],
+      "ReturnType": {
+        "Name": "Void",
+        "Namespace": "System",
+        "GenericParameters": null
+      }
+    }
+  ],
+  "Traits": [],
+  "GenericParameters": [
+    {
+      "Name": "T",
+      "Position": 0,
+      "Type": null
+    }
+  ],
+  "Type": "Interface"
+}

@@ -7,6 +7,10 @@ import com.sun.jna.platform.win32.WinNT.HRESULT
 import com.sun.jna.ptr.PointerByReference
 @FieldOrder("queryInterface","addRef","release")
 class IUnknown(ptr: Pointer? = Pointer.NULL) : Structure(ptr) {
+    init {
+        autoRead = true
+        read()
+    }
     @JvmField
     var queryInterface: QueryInterface? = null
 
@@ -26,5 +30,16 @@ class IUnknown(ptr: Pointer? = Pointer.NULL) : Structure(ptr) {
 
     interface Release : Callback {
         fun invoke(thisPtr: Pointer): HRESULT
+    }
+
+    fun queryInterface(thisPtr: Pointer, iid: Guid.REFIID, returnValue: PointerByReference):HRESULT {
+        return queryInterface!!.invoke(thisPtr,iid, returnValue)
+    }
+
+    fun addRef(thisPtr: Pointer): HRESULT {
+        return addRef!!.invoke(thisPtr)
+    }
+    fun release(thisPtr: Pointer): HRESULT {
+        return release!!.invoke(thisPtr)
     }
 }
