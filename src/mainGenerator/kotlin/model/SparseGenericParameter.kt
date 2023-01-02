@@ -11,6 +11,9 @@ data class SparseGenericParameter(
     val type: SparseTypeReference?
 ){
     fun projectType(typeVariable: String, newTypeReference: SparseTypeReference): SparseGenericParameter {
+        if (type == null && typeVariable == name) {
+            return copy(type = newTypeReference)
+        }
         return copy(
             type = type?.projectType(typeVariable,newTypeReference)
         )
