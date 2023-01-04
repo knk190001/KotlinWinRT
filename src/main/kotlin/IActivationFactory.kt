@@ -11,7 +11,7 @@ import com.sun.jna.ptr.IntByReference
 import com.sun.jna.ptr.PointerByReference
 
 @FieldOrder("iInspectable", "activateInstance")
-class IActivationFactory(ptr: Pointer? = Pointer.NULL) : Structure(ptr) {
+class IActivationFactory(val ptr: Pointer? = Pointer.NULL) : Structure(ptr!!.getPointer(0)) {
     init {
         autoRead = true
         read()

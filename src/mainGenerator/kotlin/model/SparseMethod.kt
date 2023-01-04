@@ -6,7 +6,7 @@ data class SparseMethod(
     @Json("Name")
     val name: String,
     @Json("Parameters")
-    val parameters: ArrayList<SparseParameter>,
+    val parameters: List<SparseParameter>,
     @Json("ReturnType")
     val returnType: SparseTypeReference
 ) {

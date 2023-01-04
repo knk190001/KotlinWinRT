@@ -196,8 +196,16 @@
   ],
   "Traits": [
     {
-      "Name": "IJsonValueStatics",
-      "Namespace": "Windows.Data.Json",
+      "Interfaces": [
+        {
+          "Name": "IJsonValueStatics",
+          "Namespace": "Windows.Data.Json"
+        },
+        {
+          "Name": "IJsonValueStatics2",
+          "Namespace": "Windows.Data.Json"
+        }
+      ],
       "TraitType": "Static"
     }
   ],

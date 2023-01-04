@@ -41,16 +41,33 @@ class ABIGenerator2 : KotlinCodeGenerator {
         }.filterNotNull()
 
         val interfaces = entities.filterIsInstance<SparseInterface>()
-        lateinit var lookUpInterface: (SparseTypeReference) -> SparseInterface
 
-        lookUpInterface = ret@{ typeReference: SparseTypeReference ->
+        val lookUpInterface = lambda@{ typeReference: SparseTypeReference ->
             println(typeReference)
             val tr = if (typeReference.name.endsWith("&")) {
                 typeReference.copy(name = typeReference.name.dropLast(1))
-            }else{
+            } else if (interfaces.none { it.name == typeReference.name && it.namespace == typeReference.namespace }) {
+                try {
+                    typeReference.copy(
+                        name = "${
+                            typeReference.name.replaceAfter('_', "").dropLast(1)
+                        }`${typeReference.genericParameters!!.count()}"
+                    )
+                } catch (e: NullPointerException) {
+                    e.printStackTrace()
+                }
+                typeReference.copy(
+                    name = "${
+                        typeReference.name.replaceAfter('_', "").dropLast(1)
+                    }`${typeReference.genericParameters!!.count()}"
+                )
+            } else {
                 typeReference
             }
-            return@ret interfaces.first {
+            if (interfaces.none { it.name == tr.name && it.namespace == tr.namespace }) {
+                println(tr)
+            }
+            interfaces.first {
                 it.name == tr.name && it.namespace == tr.namespace
             }
         }
@@ -80,7 +97,7 @@ class ABIGenerator2 : KotlinCodeGenerator {
                 else -> throw InvalidObjectException("Object is not of type sparse class or sparse interface.")
             }
         }.toMutableList().apply {
-            addAll(generateProjectedTypes(projections, lookUpInterface){ sInterface, parameters ->
+            addAll(generateProjectedTypes(projections, lookUpInterface) { sInterface, parameters ->
                 projections.contains(sInterface to parameters)
             })
         }
@@ -99,10 +116,15 @@ class ABIGenerator2 : KotlinCodeGenerator {
     private fun generateProjectedTypes(
         projections: Collection<Pair<SparseInterface, Collection<SparseGenericParameter>>>,
         lookUpTypeReference: (SparseTypeReference) -> SparseInterface,
-        checkIfExists: (SparseInterface, Collection<SparseGenericParameter>) ->  Boolean
+        checkIfExists: (SparseInterface, Collection<SparseGenericParameter>) -> Boolean
     ): List<FileSpec> {
         val secondaryProjections = mutableListOf<Pair<SparseInterface, Collection<SparseGenericParameter>>>()
-        return projections.map {
+        return projections.filter {
+
+            it.second.none { gParam ->
+                gParam.type == null
+            }
+        }.map {
             val (sInterface, genericParameters) = it
             val suffix = getProjectedName(genericParameters)
             val newName = "${sInterface.name.substring(0, sInterface.name.length - 2)}$suffix"
@@ -120,10 +142,14 @@ class ABIGenerator2 : KotlinCodeGenerator {
             }
         }.toMutableList().apply {
             if (secondaryProjections.isNotEmpty()) {
-                addAll(generateProjectedTypes(secondaryProjections.distinct(), lookUpTypeReference){ sInterface, params ->
-                    if (secondaryProjections.contains(sInterface to params)) true
-                    else checkIfExists(sInterface, params)
-                })
+                addAll(
+                    generateProjectedTypes(
+                        secondaryProjections.distinct(),
+                        lookUpTypeReference
+                    ) { sInterface, params ->
+                        if (secondaryProjections.contains(sInterface to params)) true
+                        else checkIfExists(sInterface, params)
+                    })
             }
         }
     }
@@ -163,7 +189,7 @@ class ABIGenerator2 : KotlinCodeGenerator {
         byRef.addFunction(setValueSpec.build())
 
         val constructorSpec = FunSpec.constructorBuilder()
-        val ptrParameterSpec = ParameterSpec.builder("ptr", Pointer::class)
+        val ptrParameterSpec = ParameterSpec.builder("ptr", Pointer::class.asClassName().copy(true))
             .defaultValue("Pointer.NULL")
         constructorSpec.addParameter(ptrParameterSpec.build())
         constructorSpec.addModifiers(KModifier.PRIVATE)
@@ -176,17 +202,29 @@ class ABIGenerator2 : KotlinCodeGenerator {
             projectInterface(lookUpTypeReference(it), it.genericParameters!!)
         }
 
-        sparseClass.interfaces.filter {
-            !it.name.contains('`')
+        sparseClass.interfaces.map {
+            if (it.genericParameters == null) {
+                it
+            } else {
+                it.copy(name = "${it.name.dropLast(2)}${getProjectedName(it.genericParameters)}")
+            }
         }.map {
             FunSpec.builder("as${it.name}").apply {
                 addModifiers(KModifier.PRIVATE)
                 val cb = CodeBlock.builder().apply {
-                    addStatement(
-                        "val refiid = %T(%T.IID)",
-                        REFIID::class,
-                        ClassName(it.namespace, it.name)
-                    )
+                    if (it.genericParameters != null) {
+                        addStatement(
+                            "val refiid = %T(%T.ABI.PIID)",
+                            REFIID::class,
+                            ClassName(it.namespace, it.name)
+                        )
+                    } else {
+                        addStatement(
+                            "val refiid = %T(%T.ABI.IID)",
+                            REFIID::class,
+                            ClassName(it.namespace, it.name)
+                        )
+                    }
                     addStatement("val ref = %T()", PointerByReference::class.asClassName())
                     addStatement(
                         "%T(pointer.getPointer(0)).queryInterface(pointer, refiid, ref)",
@@ -200,8 +238,12 @@ class ABIGenerator2 : KotlinCodeGenerator {
             }.build()
         }.forEach(typeSpec::addFunction)
 
-        sparseClass.interfaces.filter {
-            !it.name.contains('`')
+        sparseClass.interfaces.map {
+            if (it.genericParameters == null) {
+                it
+            } else {
+                it.copy(name = "${it.name.dropLast(2)}${getProjectedName(it.genericParameters)}")
+            }
         }.map {
             PropertySpec.builder("${it.name}_Interface", ClassName(it.namespace, it.name)).apply {
                 val delegateCb = CodeBlock.builder().apply {
@@ -215,15 +257,17 @@ class ABIGenerator2 : KotlinCodeGenerator {
             }.build()
         }.forEach(typeSpec::addProperty)
         typeSpec.addType(generateFromABIObject(sparseClass))
+        generateCompanion(sparseClass, lookUpTypeReference)?.let {
+            typeSpec.addType(it)
+        }
+
         sparseClass.interfaces.flatMap {
             generateMethodsForClassFromInterface(it, lookUpTypeReference, projectInterface)
         }.forEach(typeSpec::addFunction)
         typeSpec.addType(byRef.build())
         fileSpec.addImport("", "toHandle")
         fileSpec.addImport("", "checkHR")
-        if (sparseClass.traits.any {
-                it.traitType == "DirectActivation"
-            }) {
+        if (hasDirectActivationTrait(sparseClass)) {
             typeSpec.addFunction(generateDirectActivationConstructor(sparseClass))
         }
 
@@ -243,9 +287,8 @@ class ABIGenerator2 : KotlinCodeGenerator {
                 !method.returnType.name.contains('[')
     }
 
-    private fun generateDirectActivator(sClass: SparseClass): FunSpec {
-        return FunSpec.builder("activate").apply {
-            this.returns(Pointer::class)
+    private fun generateDirectActivator(builder: TypeSpec.Builder, sClass: SparseClass) {
+        val createActivationFactorySpec = FunSpec.builder("createActivationFactory").apply {
             val cb = CodeBlock.builder().apply {
                 addStatement(
                     "val refiid = %T(%M)",
@@ -257,14 +300,68 @@ class ABIGenerator2 : KotlinCodeGenerator {
                 val classpath = "${sClass.namespace}.${sClass.name}"
                 addStatement("var hr = %M.RoGetActivationFactory(%S.toHandle(),refiid,iAFPtr)", win32, classpath)
                 addStatement("checkHR(hr)")
-                addStatement("val iAF = %T(iAFPtr.value.getPointer(0))", ClassName("", "IActivationFactory"))
+                addStatement("return %T(iAFPtr.value)", ClassName("", "IActivationFactory"))
+            }.build()
+            addCode(cb)
+            returns(ClassName("", "IActivationFactory"))
+        }.build()
+        builder.addFunction(createActivationFactorySpec)
+        val activationFactoryPropertySpec =
+            PropertySpec.builder("activationFactory", ClassName("", "IActivationFactory"))
+                .apply {
+                    val delegateCb = CodeBlock.builder().apply {
+                        beginControlFlow("lazy")
+                        addStatement("createActivationFactory()")
+                        endControlFlow()
+                    }.build()
+
+                    delegate(delegateCb)
+                }.build()
+        builder.addProperty(activationFactoryPropertySpec)
+        builder.addFunction(FunSpec.builder("activate").apply {
+            this.returns(Pointer::class)
+            val cb = CodeBlock.builder().apply {
                 addStatement("val result = %T()", PointerByReference::class)
-                addStatement("hr = iAF.activateInstance(iAFPtr.value, result)")
+                addStatement("val hr = activationFactory.activateInstance(activationFactory.ptr!!, result)")
                 addStatement("checkHR(hr)")
                 addStatement("return result.value")
             }.build()
             addCode(cb)
+        }.build())
+    }
+
+    private fun generateStaticInterface(
+        builder: TypeSpec.Builder,
+        staticInterface: StaticInterface,
+        sClass: SparseClass
+    ) {
+        val createStaticInterfaceSpec = FunSpec.builder("create${staticInterface.name}").apply {
+            returns(ClassName(staticInterface.namespace, staticInterface.name))
+            addStatement(
+                "val refiid = %T(%T.ABI.IID)",
+                REFIID::class,
+                ClassName(staticInterface.namespace, staticInterface.name)
+            )
+            addStatement("val interfacePtr = %T()", PointerByReference::class)
+            val win32 = MemberName(ClassName("", "JNAApiInterface"), "INSTANCE")
+            val classpath = "${sClass.namespace}.${sClass.name}"
+            addStatement("var hr = %M.RoGetActivationFactory(%S.toHandle(),refiid,interfacePtr)", win32, classpath)
+            addStatement("return %T(interfacePtr.value)", ClassName(staticInterface.namespace, staticInterface.name))
         }.build()
+
+        val staticInterfaceProperty = PropertySpec.builder(
+            "${staticInterface.name}_Instance",
+            ClassName(staticInterface.namespace, staticInterface.name)
+        ).apply {
+            val delegateCb = CodeBlock.builder().apply {
+                beginControlFlow("lazy")
+                addStatement("create${staticInterface.name}()")
+                endControlFlow()
+            }.build()
+            delegate(delegateCb)
+        }.build()
+        builder.addFunction(createStaticInterfaceSpec)
+        builder.addProperty(staticInterfaceProperty)
     }
 
     private fun generateFromABIObject(sClass: SparseClass): TypeSpec {
@@ -278,12 +375,56 @@ class ABIGenerator2 : KotlinCodeGenerator {
                 addCode(cb)
             }.build()
             addFunction(fromABISpec)
-            if (sClass.traits.any {
-                    it.traitType == "DirectActivation"
-                }) {
-                addFunction(generateDirectActivator(sClass))
+            if (hasDirectActivationTrait(sClass)) {
+                generateDirectActivator(this, sClass)
+            }
+            if (hasStaticTrait(sClass)) {
+                val staticTrait = sClass.traits.filterIsInstance<StaticTrait>().single()
+                staticTrait.interfaces.forEach {
+                    generateStaticInterface(this, it, sClass)
+                }
             }
         }.build()
+    }
+
+    private fun generateCompanion(sClass: SparseClass, lookUp: (SparseTypeReference) -> SparseInterface): TypeSpec? {
+        if (!hasStaticTrait(sClass)) return null
+        val staticTrait = sClass.traits.filterIsInstance<StaticTrait>().single()
+        val spec = TypeSpec.companionObjectBuilder().apply {
+            staticTrait.interfaces.map {
+                SparseTypeReference(it.name, it.namespace, null) to it
+            }.map{
+                lookUp(it.first) to it.second
+            }.flatMap {
+                val (sInterface, staticInterface) = it
+                sInterface.methods.map {method ->
+                    method to staticInterface
+                }
+            }.map {
+                val (method, staticInterface) = it
+                FunSpec.builder(method.name).apply {
+                    method.parameters.forEach { param ->
+                        addParameter(param.name, param.type.asClassName())
+                    }
+                    val cb = CodeBlock.builder().apply {
+                        add("return ABI.${staticInterface.name}_Instance.${method.name}(")
+                        add(method.parameters.map { param -> param.name }.joinToString())
+                        add(")\n")
+                    }.build()
+                    addCode(cb)
+                }.build()
+            }.forEach(::addFunction)
+        }.build()
+
+        return spec
+    }
+
+    private fun hasStaticTrait(sClass: SparseClass): Boolean {
+        return sClass.traits.filterIsInstance<StaticTrait>().any()
+    }
+
+    private fun hasDirectActivationTrait(sClass: SparseClass) = sClass.traits.any {
+        it.traitType == "DirectActivation"
     }
 
     private fun generateMethodsForClassFromInterface(
@@ -292,22 +433,35 @@ class ABIGenerator2 : KotlinCodeGenerator {
         projectInterface: (SparseInterface, Collection<SparseGenericParameter>) -> Unit,
     ): Collection<FunSpec> {
         val sInterface = lookUpTypeReference(typeReference)
-        if (sInterface.genericParameters != null) return emptyList()
+        //if (sInterface.genericParameters != null) return emptyList()
         return sInterface.methods.filter(::isMethodValid).map { method ->
+            val m = if (typeReference.genericParameters != null) {
+                typeReference.genericParameters.fold(method) { acc, genericParameter ->
+                    acc.projectType(genericParameter.name, genericParameter.type!!)
+                }
+            } else {
+                method
+            }
             FunSpec.builder(method.name).apply {
-                method.parameters.forEach {
+                m.parameters.forEach {
                     addParameter(it.name, it.type.asClassName())
                     if (it.type.genericParameters != null) {
                         projectInterface(lookUpTypeReference(it.type), it.type.genericParameters)
                     }
                 }
-                if (method.returnType.genericParameters != null) {
-                    projectInterface(lookUpTypeReference(method.returnType), method.returnType.genericParameters)
+                if (m.returnType.genericParameters != null) {
+                    projectInterface(lookUpTypeReference(method.returnType), typeReference.genericParameters!!)
                 }
-                returns(method.returnType.asClassName())
+                returns(m.returnType.asClassName())
+                val name = if (typeReference.genericParameters != null) {
+                    val parameters = getProjectedName(typeReference.genericParameters)
+                    "${sInterface.name.dropLast(2)}$parameters"
+                } else {
+                    sInterface.name
+                }
                 val cb = CodeBlock.builder().apply {
-                    add("return ${sInterface.name}_Interface.${method.name}(")
-                    method.parameters.forEach {
+                    add("return ${name}_Interface.${m.name}(")
+                    m.parameters.forEach {
                         add("${it.name}, ")
                     }
                     add(")")
@@ -360,16 +514,14 @@ class ABIGenerator2 : KotlinCodeGenerator {
         typeSpec.addProperty(vtblPtrSpec)
 
         val companionObjectSpec = TypeSpec.companionObjectBuilder().apply {
-            val iidSpec = PropertySpec.builder("IID", IID::class.asClassName()).apply {
-                this.initializer("%T(%S)", IID::class.asClassName(), sparseInterface.guid)
-            }
-            addProperty(iidSpec.build())
+
+
         }.build()
 
         typeSpec.addType(companionObjectSpec)
 
         val constructorSpec = FunSpec.constructorBuilder()
-        val ptrParameterSpec = ParameterSpec.builder("ptr", Pointer::class)
+        val ptrParameterSpec = ParameterSpec.builder("ptr", Pointer::class.asClassName().copy(true))
             .defaultValue("Pointer.NULL")
         constructorSpec.addParameter(ptrParameterSpec.build())
         typeSpec.primaryConstructor(constructorSpec.build())
@@ -437,7 +589,29 @@ class ABIGenerator2 : KotlinCodeGenerator {
             builder.returns(it.returnType.asClassName())
             if (isMethodValid(it)) builder.build() else null
         }.filterNotNull().forEach(typeSpec::addFunction)
+        val abiSpec = TypeSpec.objectBuilder("ABI")
+        if (sparseInterface.genericParameters != null && sparseInterface.genericParameters.all { it.type != null }) {
+            println("Generating: ${sparseInterface.namespace}.${sparseInterface.name}")
+            val piid = GuidGenerator.CreateIID(
+                SparseTypeReference(
+                    sparseInterface.name,
+                    sparseInterface.namespace,
+                    sparseInterface.genericParameters
+                ), lookUpTypeReference
+            )!!.toGuidString().filter { it.isLetterOrDigit() }.lowercase()
+            val piidSpec = PropertySpec.builder("PIID", IID::class).apply {
+                initializer(CodeBlock.of("%T(%S)", IID::class, piid))
+            }.build()
 
+            abiSpec.addProperty(piidSpec)
+
+        }
+        val iidSpec = PropertySpec.builder("IID", IID::class.asClassName()).apply {
+            this.initializer("%T(%S)", IID::class.asClassName(), sparseInterface.guid)
+        }
+        abiSpec.addProperty(iidSpec.build())
+
+        typeSpec.addType(abiSpec.build())
         typeSpec.addType(byRef.build())
         fileSpec.addType(typeSpec.build())
 

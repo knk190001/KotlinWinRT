@@ -24,6 +24,7 @@ dependencies {
     implementation("net.java.dev.jna:jna-platform:5.12.1")
 //    generatingConfig(sourceSets["main"].output)
     generatingConfig("net.java.dev.jna:jna:5.12.1")
+    generatingConfig("com.47deg:memeid:0.7.0")
     generatingConfig("net.java.dev.jna:jna-platform:5.12.1")
     generatingConfig("com.beust:klaxon:5.5")
 }

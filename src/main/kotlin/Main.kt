@@ -1,24 +1,33 @@
 import Windows.Data.Json.JsonArray
 import Windows.Data.Json.JsonObject
+import Windows.Data.Json.JsonValue
 import com.sun.jna.Library
+import com.sun.jna.Memory
 import com.sun.jna.Native
+import com.sun.jna.Pointer
+import com.sun.jna.StringArray
 import com.sun.jna.WString
+import com.sun.jna.platform.win32.Guid
 import com.sun.jna.platform.win32.Guid.REFIID
 import com.sun.jna.platform.win32.Win32Exception
+import com.sun.jna.platform.win32.WinDef.UINT
 import com.sun.jna.platform.win32.WinNT.*
 import com.sun.jna.ptr.IntByReference
 import com.sun.jna.ptr.PointerByReference
+import com.sun.jna.win32.StdCallLibrary
+import java.lang.ref.Reference
 
 
-interface JNAApiInterface : Library {
+interface JNAApiInterface : StdCallLibrary {
     fun RoActivateInstance(filter: HANDLE, pref: PointerByReference): HRESULT
     fun RoGetActivationFactory(activatableClassId: HANDLE, iid: REFIID, factory: PointerByReference): HRESULT
     fun RoInitialize(initType: Int): HRESULT
+    fun RoGetParameterizedTypeInstanceIID(nameElementCount: UINT, nameElements: Pointer, metadataLocator: Pointer?, iid: Guid.GUID.ByReference, pExtra: Pointer?): HRESULT
     fun WindowsCreateString(sourceString: WString, length: Int, string: HANDLEByReference): HRESULT
     fun WindowsGetStringRawBuffer(str: HANDLE, length: IntByReference): WString
 
     companion object {
-        val INSTANCE = Native.loadLibrary(
+        val INSTANCE = Native.load(
             "combase",
             JNAApiInterface::class.java
         ) as JNAApiInterface
@@ -26,60 +35,23 @@ interface JNAApiInterface : Library {
 }
 
 fun main() {
-//    var hr: HRESULT
-//    hr = JNAApiInterface.INSTANCE.RoInitialize(1)
-//    hr.print("RoInitialize")
-//
-//    val refiid = REFIID(IJsonObjectStatics.IID)
-//
-//    val activationFactoryClassHandle = "Windows.Data.Json.JsonObject".toHandle()
-//
-//    val factoryRef = PointerByReference()
-//    hr = JNAApiInterface.INSTANCE.RoGetActivationFactory(activationFactoryClassHandle, refiid, factoryRef)
-//    hr.print("RoGetActivationFactory")
-//
-//    val iJsonObjectStatics = IJsonObjectStatics(factoryRef.value.getPointer(0))
-//    iJsonObjectStatics.read()
-//    iJsonObjectStatics.autoRead = true
-//
-//    val jsonHandle = "{}".toHandle()
-//
-//    val jsonObjPoiner = PointerByReference()
-//    hr = iJsonObjectStatics.parse!!.invoke(iJsonObjectStatics.pointer, jsonHandle, jsonObjPoiner)
-//    hr.print("IJsonObjectStatics::parse")
-//
-//    val iJsonObjectIUnknown = IUnknown(jsonObjPoiner.value.getPointer(0))
-//    iJsonObjectIUnknown.read()
-//
-//    val refiid2 = Guid.REFIID(IStringable.IID)
-//    val iStringablePtr = PointerByReference()
-//    hr = iJsonObjectIUnknown.queryInterface!!.invoke(
-//        jsonObjPoiner.value,
-//        refiid2,
-//        iStringablePtr
-//    )
-//    hr.print("IUnknown::queryInterface")
-//
-//    val iStringable = IStringable(iStringablePtr.value.getPointer(0))
-//    iStringable.read()
-//
-//    val toStringHandle: HANDLEByReference = HANDLEByReference()
-//    hr = iStringable.toString!!.invoke(iStringablePtr.value, toStringHandle)
-//    hr.print("IStringable::toString")
-//
-//    println(toStringHandle.value.handleToString())
-//
-//    val runtimeClassName = HANDLEByReference()
-//    iStringable.iInspectable!!.getRuntimeClassName!!.invoke(iStringablePtr.value,runtimeClassName)
-//    println(runtimeClassName.value.handleToString())
     testV2()
-
 }
 
 fun testV2() {
     JNAApiInterface.INSTANCE.RoInitialize(1)
     val jsonObject = JsonObject()
+    val jsonArray = JsonArray()
+    val jsonValue = JsonValue.CreateStringValue("Hello world")
+    val jsonValue2 = JsonValue.CreateNullValue()
+    println(jsonObject.Stringify())
+    println(jsonArray.Stringify())
 
+    jsonArray.Append(jsonValue.IJsonValue_Interface)
+    println(jsonArray.Stringify())
+
+    jsonObject.SetNamedValue("array", jsonArray.IJsonValue_Interface)
+    jsonObject.SetNamedValue("nullProperty",jsonValue2.IJsonValue_Interface)
     println(jsonObject.Stringify())
 }
 
@@ -95,7 +67,6 @@ fun String.toHandle():HANDLE {
     val wString = WString(this)
     val handleByReference = HANDLEByReference()
     val hr = JNAApiInterface.INSTANCE.WindowsCreateString(wString, this.length, handleByReference)
-    hr.print("WindowsCreateString")
     return handleByReference.value
 }
 
@@ -103,8 +74,4 @@ fun HANDLE.handleToString():String {
     val ibr = IntByReference()
     val wstr = JNAApiInterface.INSTANCE.WindowsGetStringRawBuffer(this,ibr)
     return wstr.toString()
-}
-
-fun test() {
-
 }

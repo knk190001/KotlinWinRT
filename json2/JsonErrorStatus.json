@@ -3,6 +3,10 @@
   "Namespace": "Windows.Data.Json",
   "Interfaces": [],
   "Methods": [],
-  "Traits": [],
+  "Traits": [
+    {
+      "TraitType": "ValueType"
+    }
+  ],
   "Type": "Class"
 }

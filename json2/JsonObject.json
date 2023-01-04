@@ -667,8 +667,12 @@
       "TraitType": "DirectActivation"
     },
     {
-      "Name": "IJsonObjectStatics",
-      "Namespace": "Windows.Data.Json",
+      "Interfaces": [
+        {
+          "Name": "IJsonObjectStatics",
+          "Namespace": "Windows.Data.Json"
+        }
+      ],
       "TraitType": "Static"
     }
   ],

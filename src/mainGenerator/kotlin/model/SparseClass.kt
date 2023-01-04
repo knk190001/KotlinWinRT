@@ -8,9 +8,9 @@ data class SparseClass(
     @Json("Namespace")
     val namespace: String,
     @Json("Interfaces")
-    val interfaces: ArrayList<SparseTypeReference>,
+    val interfaces: List<SparseTypeReference>,
     @Json("Methods")
-    val methods: ArrayList<SparseMethod>,
+    val methods: List<SparseMethod>,
     @Json("Traits")
-    val traits: ArrayList<Trait>
+    val traits: List<Trait>
 ): SparseEntity("Class")

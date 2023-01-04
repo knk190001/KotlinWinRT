@@ -16,6 +16,7 @@ class TraitAdapter : TypeAdapter<Trait> {
         return when (type as String) {
             "DirectActivation" -> DirectActivationTrait::class
             "Static" -> StaticTrait::class
+            "ValueType" -> ValueTypeTrait::class
             else -> {
                 throw NotImplementedError("Trait $type has not been implemented")
             }

@@ -24,8 +24,12 @@
   ],
   "Traits": [
     {
-      "Name": "IJsonErrorStatics2",
-      "Namespace": "Windows.Data.Json",
+      "Interfaces": [
+        {
+          "Name": "IJsonErrorStatics2",
+          "Namespace": "Windows.Data.Json"
+        }
+      ],
       "TraitType": "Static"
     }
   ],
