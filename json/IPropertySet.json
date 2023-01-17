@@ -1,0 +1,9 @@
+{
+  "Name": "IPropertySet",
+  "Namespace": "Windows.Foundation.Collections",
+  "Guid": "8a43ed9ff4e64421acf91dab2986820c",
+  "Methods": [],
+  "Traits": [],
+  "GenericParameters": null,
+  "Type": "Interface"
+}

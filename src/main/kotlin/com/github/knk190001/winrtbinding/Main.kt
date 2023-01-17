@@ -34,6 +34,9 @@ interface JNAApiInterface : StdCallLibrary {
 
 fun main() {
     testV2()
+//    Delegate.createDelegate(emptyList(), KStdCallback {
+//
+//    })
 }
 
 fun testV2() {

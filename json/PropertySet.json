@@ -1,0 +1,329 @@
+{
+  "Name": "PropertySet",
+  "Namespace": "Windows.Foundation.Collections",
+  "Interfaces": [
+    {
+      "Name": "IPropertySet",
+      "Namespace": "Windows.Foundation.Collections",
+      "GenericParameters": null
+    },
+    {
+      "Name": "IObservableMap`2",
+      "Namespace": "Windows.Foundation.Collections",
+      "GenericParameters": [
+        {
+          "Name": "K",
+          "Position": 0,
+          "Type": {
+            "Name": "String",
+            "Namespace": "System",
+            "GenericParameters": null
+          }
+        },
+        {
+          "Name": "V",
+          "Position": 1,
+          "Type": {
+            "Name": "Object",
+            "Namespace": "System",
+            "GenericParameters": null
+          }
+        }
+      ]
+    },
+    {
+      "Name": "IMap`2",
+      "Namespace": "Windows.Foundation.Collections",
+      "GenericParameters": [
+        {
+          "Name": "K",
+          "Position": 0,
+          "Type": {
+            "Name": "String",
+            "Namespace": "System",
+            "GenericParameters": null
+          }
+        },
+        {
+          "Name": "V",
+          "Position": 1,
+          "Type": {
+            "Name": "Object",
+            "Namespace": "System",
+            "GenericParameters": null
+          }
+        }
+      ]
+    },
+    {
+      "Name": "IIterable`1",
+      "Namespace": "Windows.Foundation.Collections",
+      "GenericParameters": [
+        {
+          "Name": "T",
+          "Position": 0,
+          "Type": {
+            "Name": "IKeyValuePair`2",
+            "Namespace": "Windows.Foundation.Collections",
+            "GenericParameters": [
+              {
+                "Name": "K",
+                "Position": 0,
+                "Type": {
+                  "Name": "String",
+                  "Namespace": "System",
+                  "GenericParameters": null
+                }
+              },
+              {
+                "Name": "V",
+                "Position": 1,
+                "Type": {
+                  "Name": "Object",
+                  "Namespace": "System",
+                  "GenericParameters": null
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "Methods": [
+    {
+      "Name": ".ctor",
+      "Parameters": [],
+      "ReturnType": {
+        "Name": "Void",
+        "Namespace": "System",
+        "GenericParameters": null
+      }
+    },
+    {
+      "Name": "add_MapChanged",
+      "Parameters": [
+        {
+          "Name": "vhnd",
+          "Type": {
+            "Name": "MapChangedEventHandler`2",
+            "Namespace": "Windows.Foundation.Collections",
+            "GenericParameters": [
+              {
+                "Name": "K",
+                "Position": 0,
+                "Type": {
+                  "Name": "String",
+                  "Namespace": "System",
+                  "GenericParameters": null
+                }
+              },
+              {
+                "Name": "V",
+                "Position": 1,
+                "Type": {
+                  "Name": "Object",
+                  "Namespace": "System",
+                  "GenericParameters": null
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "ReturnType": {
+        "Name": "EventRegistrationToken",
+        "Namespace": "Windows.Foundation",
+        "GenericParameters": null
+      }
+    },
+    {
+      "Name": "remove_MapChanged",
+      "Parameters": [
+        {
+          "Name": "token",
+          "Type": {
+            "Name": "EventRegistrationToken",
+            "Namespace": "Windows.Foundation",
+            "GenericParameters": null
+          }
+        }
+      ],
+      "ReturnType": {
+        "Name": "Void",
+        "Namespace": "System",
+        "GenericParameters": null
+      }
+    },
+    {
+      "Name": "Lookup",
+      "Parameters": [
+        {
+          "Name": "key",
+          "Type": {
+            "Name": "String",
+            "Namespace": "System",
+            "GenericParameters": null
+          }
+        }
+      ],
+      "ReturnType": {
+        "Name": "Object",
+        "Namespace": "System",
+        "GenericParameters": null
+      }
+    },
+    {
+      "Name": "get_Size",
+      "Parameters": [],
+      "ReturnType": {
+        "Name": "UInt32",
+        "Namespace": "System",
+        "GenericParameters": null
+      }
+    },
+    {
+      "Name": "HasKey",
+      "Parameters": [
+        {
+          "Name": "key",
+          "Type": {
+            "Name": "String",
+            "Namespace": "System",
+            "GenericParameters": null
+          }
+        }
+      ],
+      "ReturnType": {
+        "Name": "Boolean",
+        "Namespace": "System",
+        "GenericParameters": null
+      }
+    },
+    {
+      "Name": "GetView",
+      "Parameters": [],
+      "ReturnType": {
+        "Name": "IMapView`2",
+        "Namespace": "Windows.Foundation.Collections",
+        "GenericParameters": [
+          {
+            "Name": "K",
+            "Position": 0,
+            "Type": {
+              "Name": "String",
+              "Namespace": "System",
+              "GenericParameters": null
+            }
+          },
+          {
+            "Name": "V",
+            "Position": 1,
+            "Type": {
+              "Name": "Object",
+              "Namespace": "System",
+              "GenericParameters": null
+            }
+          }
+        ]
+      }
+    },
+    {
+      "Name": "Insert",
+      "Parameters": [
+        {
+          "Name": "key",
+          "Type": {
+            "Name": "String",
+            "Namespace": "System",
+            "GenericParameters": null
+          }
+        },
+        {
+          "Name": "value",
+          "Type": {
+            "Name": "Object",
+            "Namespace": "System",
+            "GenericParameters": null
+          }
+        }
+      ],
+      "ReturnType": {
+        "Name": "Boolean",
+        "Namespace": "System",
+        "GenericParameters": null
+      }
+    },
+    {
+      "Name": "Remove",
+      "Parameters": [
+        {
+          "Name": "key",
+          "Type": {
+            "Name": "String",
+            "Namespace": "System",
+            "GenericParameters": null
+          }
+        }
+      ],
+      "ReturnType": {
+        "Name": "Void",
+        "Namespace": "System",
+        "GenericParameters": null
+      }
+    },
+    {
+      "Name": "Clear",
+      "Parameters": [],
+      "ReturnType": {
+        "Name": "Void",
+        "Namespace": "System",
+        "GenericParameters": null
+      }
+    },
+    {
+      "Name": "First",
+      "Parameters": [],
+      "ReturnType": {
+        "Name": "IIterator`1",
+        "Namespace": "Windows.Foundation.Collections",
+        "GenericParameters": [
+          {
+            "Name": "T",
+            "Position": 0,
+            "Type": {
+              "Name": "IKeyValuePair`2",
+              "Namespace": "Windows.Foundation.Collections",
+              "GenericParameters": [
+                {
+                  "Name": "K",
+                  "Position": 0,
+                  "Type": {
+                    "Name": "String",
+                    "Namespace": "System",
+                    "GenericParameters": null
+                  }
+                },
+                {
+                  "Name": "V",
+                  "Position": 1,
+                  "Type": {
+                    "Name": "Object",
+                    "Namespace": "System",
+                    "GenericParameters": null
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "Traits": [
+    {
+      "TraitType": "DirectActivation"
+    }
+  ],
+  "Type": "Class"
+}

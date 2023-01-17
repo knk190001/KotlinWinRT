@@ -1,0 +1,11 @@
+{
+  "Name": "CollectionChange",
+  "Namespace": "Windows.Foundation.Collections",
+  "Values": {
+    "Reset": 0,
+    "ItemInserted": 1,
+    "ItemRemoved": 2,
+    "ItemChanged": 3
+  },
+  "Type": "Enum"
+}

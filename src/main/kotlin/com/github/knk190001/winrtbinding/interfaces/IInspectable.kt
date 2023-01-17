@@ -12,7 +12,7 @@ import com.sun.jna.ptr.PointerByReference
 @FieldOrder("iUnknown", "getIids", "getRuntimeClassName", "getTrustLevel")
 class IInspectable(ptr: Pointer? = Pointer.NULL) : Structure(ptr) {
     @JvmField
-    var iUnknown: IUnknown? = null
+    var iUnknownVtbl: IUnknownVtbl? = null
     @JvmField
     var getIids: GetIids? = null
     @JvmField

@@ -1,16 +1,16 @@
 package com.github.knk190001.winrtbinding.generator
 
+import com.github.knk190001.winrtbinding.generator.model.entities.IProjectable
 import com.sun.jna.platform.win32.Guid
 import com.sun.jna.platform.win32.Guid.GUID
 import memeid.UUID
-import com.github.knk190001.winrtbinding.generator.model.entities.SparseEntity
 import com.github.knk190001.winrtbinding.generator.model.entities.SparseInterface
 import com.github.knk190001.winrtbinding.generator.model.entities.SparseTypeReference
 import java.nio.charset.StandardCharsets
 
 
 object GuidGenerator {
-    fun getSignature(typeReference: SparseTypeReference, lookup: (SparseTypeReference) -> SparseEntity): String {
+    fun getSignature(typeReference: SparseTypeReference, lookup: LookUpFn): String {
         if (typeReference.isTypeOf("System", "Object")) {
             return "cinterface(IInspectable)"
         }
@@ -33,13 +33,13 @@ object GuidGenerator {
                 else -> throw IllegalArgumentException("Non interface type reference")
             }
         }
-        val sInterface = lookup(typeReference) as SparseInterface
+        val sInterface = lookup(typeReference)
         return sInterface.guid.guidToSignatureFormat()
     }
 
     private val wrtPInterfaceNamespaceNative = GUID("11f47ad5-7b73-42c0-abae-878b1e16adee")
     private val wrtPinterfaceNamespaceJava = UUID.fromString("11f47ad5-7b73-42c0-abae-878b1e16adee")
-    fun CreateIID(type: SparseTypeReference, lookup: (SparseTypeReference) -> SparseEntity): Guid.GUID? {
+    fun CreateIID(type: SparseTypeReference, lookup: LookUpFn): Guid.GUID? {
         val signature: String = getSignature(type, lookup)
         val maxByteCount = (StandardCharsets.UTF_8.newEncoder().maxBytesPerChar() * signature.length).toInt()
         var array: ByteArray = ByteArray(16 + maxByteCount)

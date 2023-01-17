@@ -24,17 +24,19 @@ import io.heartpattern.gcg.api.Generator
 import io.heartpattern.gcg.api.kotlin.KotlinCodeGenerator
 import com.github.knk190001.winrtbinding.generator.model.traits.StaticInterface
 import com.github.knk190001.winrtbinding.generator.model.traits.StaticTrait
+import com.sun.jna.platform.win32.COM.Unknown
 import java.io.InvalidObjectException
 import kotlin.io.path.Path
 import kotlin.io.path.forEachDirectoryEntry
 import kotlin.io.path.inputStream
 import kotlin.reflect.KClass
 
+typealias  LookUpFn = (SparseTypeReference) -> IProjectable
+
 @Generator
 class ABIGenerator2 : KotlinCodeGenerator {
     override fun generateKotlin(): Collection<FileSpec> {
         val jsonObjects = mutableListOf<JsonObject>()
-        println(System.getProperty("user.dir"))
         Path("${System.getProperty("user.dir")}/json").forEachDirectoryEntry {
             jsonObjects.add(Parser.default().parse(it.inputStream()) as JsonObject)
         }
@@ -44,22 +46,15 @@ class ABIGenerator2 : KotlinCodeGenerator {
             Klaxon().parse<SparseEntity>(it.toJsonString())
         }.filterNotNull()
 
-        val interfaces = entities.filterIsInstance<SparseInterface>()
+        val projectables = entities.filterIsInstance<IProjectable>()
 
-        val lookUpInterface = lambda@{ typeReference: SparseTypeReference ->
-            println(typeReference)
+        val lookupProjectable: LookUpFn = lambda@{ typeReference: SparseTypeReference ->
+//            println(typeReference)
             val tr = if (typeReference.name.endsWith("&")) {
                 typeReference.copy(name = typeReference.name.dropLast(1))
-            } else if (interfaces.none { it.name == typeReference.name && it.namespace == typeReference.namespace }) {
-                try {
-                    typeReference.copy(
-                        name = "${
-                            typeReference.name.replaceAfter('_', "").dropLast(1)
-                        }`${typeReference.genericParameters!!.count()}"
-                    )
-                } catch (e: NullPointerException) {
-                    e.printStackTrace()
-                }
+            } else if (projectables.none { it.name == typeReference.name && it.namespace == typeReference.namespace } && !typeReference.name.endsWith(
+                    '`'
+                )) {
                 typeReference.copy(
                     name = "${
                         typeReference.name.replaceAfter('_', "").dropLast(1)
@@ -68,17 +63,17 @@ class ABIGenerator2 : KotlinCodeGenerator {
             } else {
                 typeReference
             }
-            if (interfaces.none { it.name == tr.name && it.namespace == tr.namespace }) {
-                println(tr)
+            if (projectables.none { it.name == tr.name && it.namespace == tr.namespace }) {
+                println()
             }
-            interfaces.first {
+            projectables.first {
                 it.name == tr.name && it.namespace == tr.namespace
             }
         }
 
-        val projections = mutableListOf<Pair<SparseInterface, Collection<SparseGenericParameter>>>()
-        val projectInterface: (SparseInterface, Collection<SparseGenericParameter>) -> Unit =
-            { sInterface: SparseInterface, genericParameters: Collection<SparseGenericParameter> ->
+        val projections = mutableListOf<Pair<DirectProjectable<*>, Collection<SparseGenericParameter>>>()
+        val projectInterface: (DirectProjectable<*>, Collection<SparseGenericParameter>) -> Unit =
+            { sInterface: DirectProjectable<*>, genericParameters: Collection<SparseGenericParameter> ->
                 if (projections.none {
                         isProjectionEquivalent(it, sInterface to genericParameters)
                     }) {
@@ -94,21 +89,24 @@ class ABIGenerator2 : KotlinCodeGenerator {
             true
         }.map {
             when (it) {
-                is SparseClass -> generateClass(it, lookUpInterface, projectInterface)
-                is SparseInterface -> generateInterface(it, lookUpInterface, projectInterface)
+                is SparseClass -> generateClass(it, lookupProjectable, projectInterface)
+                is SparseInterface -> generateInterface(it, lookupProjectable, projectInterface)
                 is SparseEnum -> generateEnum(it)
+                is SparseStruct -> generateStruct(it)
+                is SparseDelegate -> generateDelegate(it)
+
                 else -> throw InvalidObjectException("Object is not of type sparse class or sparse interface.")
             }
         }.toMutableList().apply {
-            addAll(generateProjectedTypes(projections, lookUpInterface) { sInterface, parameters ->
+            addAll(generateProjectedTypes(projections, lookupProjectable) { sInterface, parameters ->
                 projections.contains(sInterface to parameters)
             })
         }
     }
 
     private fun isProjectionEquivalent(
-        a: Pair<SparseInterface, Collection<SparseGenericParameter>>,
-        b: Pair<SparseInterface, Collection<SparseGenericParameter>>
+        a: Pair<DirectProjectable<*>, Collection<SparseGenericParameter>>,
+        b: Pair<DirectProjectable<*>, Collection<SparseGenericParameter>>
     ): Boolean {
         return a.first.namespace == b.first.namespace &&
                 a.first.name == b.first.name &&
@@ -116,11 +114,11 @@ class ABIGenerator2 : KotlinCodeGenerator {
     }
 
     private fun generateProjectedTypes(
-        projections: Collection<Pair<SparseInterface, Collection<SparseGenericParameter>>>,
-        lookUpTypeReference: (SparseTypeReference) -> SparseInterface,
-        checkIfExists: (SparseInterface, Collection<SparseGenericParameter>) -> Boolean
+        projections: Collection<Pair<DirectProjectable<*>, Collection<SparseGenericParameter>>>,
+        lookUpTypeReference: LookUpFn,
+        checkIfExists: (DirectProjectable<*>, Collection<SparseGenericParameter>) -> Boolean
     ): List<FileSpec> {
-        val secondaryProjections = mutableListOf<Pair<SparseInterface, Collection<SparseGenericParameter>>>()
+        val secondaryProjections = mutableListOf<Pair<DirectProjectable<*>, Collection<SparseGenericParameter>>>()
         return projections.filter {
 
             it.second.none { gParam ->
@@ -132,14 +130,24 @@ class ABIGenerator2 : KotlinCodeGenerator {
             val newName = "${sInterface.name.substring(0, sInterface.name.length - 2)}$suffix"
             val projectedInterface = genericParameters.fold(sInterface) { acc, sparseGenericParameter ->
                 acc.projectType(sparseGenericParameter.name, sparseGenericParameter.type!!)
-            }.copy(name = newName)
+            }.withName(newName)
 
-            generateInterface(
-                projectedInterface,
-                lookUpTypeReference
-            ) { secondaryProjectionInterface, parameters ->
-                if (!checkIfExists(secondaryProjectionInterface, parameters)) {
-                    secondaryProjections.add(secondaryProjectionInterface to parameters)
+            when (projectedInterface) {
+                is SparseInterface -> {
+                    generateInterface(
+                        projectedInterface,
+                        lookUpTypeReference
+                    ) { secondaryProjectionInterface, parameters ->
+                        if (!checkIfExists(secondaryProjectionInterface, parameters)) {
+                            secondaryProjections.add(secondaryProjectionInterface to parameters)
+                        }
+                    }
+                }
+                is SparseDelegate -> {
+                    generateDelegate(projectedInterface)
+                }
+                else -> {
+                    throw NotImplementedError()
                 }
             }
         }.toMutableList().apply {
@@ -159,8 +167,8 @@ class ABIGenerator2 : KotlinCodeGenerator {
 
     private fun generateClass(
         sparseClass: SparseClass,
-        lookUpTypeReference: (SparseTypeReference) -> SparseInterface,
-        projectInterface: (SparseInterface, Collection<SparseGenericParameter>) -> Unit
+        lookUpTypeReference: LookUpFn,
+        projectInterface: (DirectProjectable<*>, Collection<SparseGenericParameter>) -> Unit
     ): FileSpec {
         val fileSpec = FileSpec.builder(sparseClass.namespace, sparseClass.name)
         val typeSpec = TypeSpec.classBuilder(sparseClass.name)
@@ -202,7 +210,7 @@ class ABIGenerator2 : KotlinCodeGenerator {
         sparseClass.interfaces.filter {
             it.name.contains('`') && it.genericParameters != null
         }.forEach {
-            projectInterface(lookUpTypeReference(it), it.genericParameters!!)
+            projectInterface(lookUpTypeReference(it) as SparseInterface, it.genericParameters!!)
         }
 
         sparseClass.interfaces.map {
@@ -231,7 +239,7 @@ class ABIGenerator2 : KotlinCodeGenerator {
                     addStatement("val ref = %T()", PointerByReference::class.asClassName())
                     addStatement(
                         "%T(pointer.getPointer(0)).queryInterface(pointer, refiid, ref)",
-                        ClassName("", "IUnknown")
+                        ClassName("com.github.knk190001.winrtbinding.interfaces", "IUnknownVtbl")
                     )
                     addStatement("return %T(ref.value)", ClassName(it.namespace, it.name))
                 }.build()
@@ -268,8 +276,8 @@ class ABIGenerator2 : KotlinCodeGenerator {
             generateMethodsForClassFromInterface(it, lookUpTypeReference, projectInterface)
         }.forEach(typeSpec::addFunction)
         typeSpec.addType(byRef.build())
-        fileSpec.addImport("", "toHandle")
-        fileSpec.addImport("", "checkHR")
+        fileSpec.addImport("com.github.knk190001.winrtbinding", "toHandle")
+        fileSpec.addImport("com.github.knk190001.winrtbinding", "checkHR")
         if (hasDirectActivationTrait(sparseClass)) {
             typeSpec.addFunction(generateDirectActivationConstructor(sparseClass))
         }
@@ -296,21 +304,33 @@ class ABIGenerator2 : KotlinCodeGenerator {
                 addStatement(
                     "val refiid = %T(%M)",
                     REFIID::class,
-                    MemberName(ClassName("", "IActivationFactory"), "IID")
+                    MemberName(
+                        ClassName(
+                            "com.github.knk190001.winrtbinding.interfaces.IActivationFactory",
+                            "Companion"
+                        ), "IID"
+                    )
                 )
                 addStatement("val iAFPtr = %T()", PointerByReference::class)
-                val win32 = MemberName(ClassName("", "JNAApiInterface"), "INSTANCE")
+                val win32 =
+                    MemberName(ClassName("com.github.knk190001.winrtbinding.JNAApiInterface", "Companion"), "INSTANCE")
                 val classpath = "${sClass.namespace}.${sClass.name}"
                 addStatement("var hr = %M.RoGetActivationFactory(%S.toHandle(),refiid,iAFPtr)", win32, classpath)
                 addStatement("checkHR(hr)")
-                addStatement("return %T(iAFPtr.value)", ClassName("", "IActivationFactory"))
+                addStatement(
+                    "return %T(iAFPtr.value)",
+                    ClassName("com.github.knk190001.winrtbinding.interfaces", "IActivationFactory")
+                )
             }.build()
             addCode(cb)
-            returns(ClassName("", "IActivationFactory"))
+            returns(ClassName("com.github.knk190001.winrtbinding.interfaces", "IActivationFactory"))
         }.build()
         builder.addFunction(createActivationFactorySpec)
         val activationFactoryPropertySpec =
-            PropertySpec.builder("activationFactory", ClassName("", "IActivationFactory"))
+            PropertySpec.builder(
+                "activationFactory",
+                ClassName("com.github.knk190001.winrtbinding.interfaces", "IActivationFactory")
+            )
                 .apply {
                     val delegateCb = CodeBlock.builder().apply {
                         beginControlFlow("lazy")
@@ -346,7 +366,8 @@ class ABIGenerator2 : KotlinCodeGenerator {
                 ClassName(staticInterface.namespace, staticInterface.name)
             )
             addStatement("val interfacePtr = %T()", PointerByReference::class)
-            val win32 = MemberName(ClassName("", "JNAApiInterface"), "INSTANCE")
+            val win32 =
+                MemberName(ClassName("com.github.knk190001.winrtbinding.JNAApiInterface", "Companion"), "INSTANCE")
             val classpath = "${sClass.namespace}.${sClass.name}"
             addStatement("var hr = %M.RoGetActivationFactory(%S.toHandle(),refiid,interfacePtr)", win32, classpath)
             addStatement("return %T(interfacePtr.value)", ClassName(staticInterface.namespace, staticInterface.name))
@@ -390,14 +411,14 @@ class ABIGenerator2 : KotlinCodeGenerator {
         }.build()
     }
 
-    private fun generateCompanion(sClass: SparseClass, lookUp: (SparseTypeReference) -> SparseInterface): TypeSpec? {
+    private fun generateCompanion(sClass: SparseClass, lookUp: LookUpFn): TypeSpec? {
         if (!hasStaticTrait(sClass)) return null
         val staticTrait = sClass.traits.filterIsInstance<StaticTrait>().single()
         val spec = TypeSpec.companionObjectBuilder().apply {
             staticTrait.interfaces.map {
                 SparseTypeReference(it.name, it.namespace, null) to it
             }.map {
-                lookUp(it.first) to it.second
+                lookUp(it.first) as SparseInterface to it.second
             }.flatMap {
                 val (sInterface, staticInterface) = it
                 sInterface.methods.map { method ->
@@ -432,10 +453,10 @@ class ABIGenerator2 : KotlinCodeGenerator {
 
     private fun generateMethodsForClassFromInterface(
         typeReference: SparseTypeReference,
-        lookUpTypeReference: (SparseTypeReference) -> SparseInterface,
-        projectInterface: (SparseInterface, Collection<SparseGenericParameter>) -> Unit,
+        lookUpTypeReference: LookUpFn,
+        projectInterface: (DirectProjectable<*>, Collection<SparseGenericParameter>) -> Unit,
     ): Collection<FunSpec> {
-        val sInterface = lookUpTypeReference(typeReference)
+        val sInterface = lookUpTypeReference(typeReference) as SparseInterface
         //if (sInterface.genericParameters != null) return emptyList()
         return sInterface.methods.filter(::isMethodValid).map { method ->
             val m = if (typeReference.genericParameters != null) {
@@ -449,12 +470,13 @@ class ABIGenerator2 : KotlinCodeGenerator {
                 m.parameters.forEach {
                     addParameter(it.name, it.type.asClassName())
                     if (it.type.genericParameters != null) {
-                        projectInterface(lookUpTypeReference(it.type), it.type.genericParameters)
+                        projectInterface(lookUpTypeReference(it.type) as DirectProjectable<*>, it.type.genericParameters)
                     }
                 }
                 if (m.returnType.genericParameters != null) {
-                    projectInterface(lookUpTypeReference(method.returnType), typeReference.genericParameters!!)
+                    projectInterface(lookUpTypeReference(method.returnType) as DirectProjectable<*>, typeReference.genericParameters!!)
                 }
+                println("${sInterface.namespace}.${sInterface.name}")
                 returns(m.returnType.asClassName())
                 val name = if (typeReference.genericParameters != null) {
                     val parameters = getProjectedName(typeReference.genericParameters)
@@ -477,12 +499,12 @@ class ABIGenerator2 : KotlinCodeGenerator {
 
     private fun generateInterface(
         sparseInterface: SparseInterface,
-        lookUpTypeReference: (SparseTypeReference) -> SparseInterface,
-        projectInterface: (SparseInterface, Collection<SparseGenericParameter>) -> Unit
+        lookUpTypeReference: LookUpFn,
+        projectInterface: (DirectProjectable<*>, Collection<SparseGenericParameter>) -> Unit
     ): FileSpec {
         val fileSpec = FileSpec.builder(sparseInterface.namespace, sparseInterface.name)
-        fileSpec.addImport("", "handleToString")
-        fileSpec.addImport("", "toHandle")
+        fileSpec.addImport("com.github.knk190001.winrtbinding", "handleToString")
+        fileSpec.addImport("com.github.knk190001.winrtbinding", "toHandle")
         val typeSpec = TypeSpec.classBuilder(sparseInterface.name)
 
         typeSpec.superclass(PointerType::class)
@@ -536,12 +558,18 @@ class ABIGenerator2 : KotlinCodeGenerator {
             it.parameters.forEach { param ->
                 builder.addParameter(param.name, param.type.asClassName())
                 if (param.type.genericParameters != null) {
-                    projectInterface(lookUpTypeReference(param.type), param.type.genericParameters)
+                    projectInterface(
+                        lookUpTypeReference(param.type) as DirectProjectable<*>,
+                        param.type.genericParameters
+                    )
                 }
             }
 
             if (it.returnType.genericParameters != null) {
-                projectInterface(lookUpTypeReference(it.returnType), it.returnType.genericParameters)
+                projectInterface(
+                    lookUpTypeReference(it.returnType) as DirectProjectable<*>,
+                    it.returnType.genericParameters
+                )
             }
 
             val stdConventionMember = MemberName(Function::class.asClassName(), "ALT_CONVENTION")
@@ -594,7 +622,7 @@ class ABIGenerator2 : KotlinCodeGenerator {
         }.filterNotNull().forEach(typeSpec::addFunction)
         val abiSpec = TypeSpec.objectBuilder("ABI")
         if (sparseInterface.genericParameters != null && sparseInterface.genericParameters.all { it.type != null }) {
-            println("Generating: ${sparseInterface.namespace}.${sparseInterface.name}")
+//            println("Generating: ${sparseInterface.namespace}.${sparseInterface.name}")
             val piid = GuidGenerator.CreateIID(
                 SparseTypeReference(
                     sparseInterface.name,
@@ -633,6 +661,9 @@ fun SparseTypeReference.asClassName(): ClassName {
             "Void" -> Unit::class.asClassName()
             "String" -> String::class.asClassName()
             "UInt32&" -> UINTByReference::class.asClassName()
+            "Object" -> ClassName("com.sun.jna.platform.win32.COM","Unknown")
+            "Int64" -> Long::class.asClassName()
+//            "Object" -> Unknown::class.asClassName()
             else -> throw NotImplementedError("Type: $namespace.$name is not handled")
         }
     }
@@ -663,6 +694,7 @@ fun SparseTypeReference.asKClass(): KClass<*> {
             "Void" -> Unit::class
             "String" -> String::class
             "UInt32&" -> UINTByReference::class
+            "Object" -> Unknown::class
             else -> throw NotImplementedError("Type: $namespace.$name is not handled")
         }
     }
@@ -693,6 +725,7 @@ fun SparseTypeReference.byReferenceClassName(): ClassName {
             "Int32" -> IntByReference::class.asClassName()
             "Void" -> Unit::class.asClassName()
             "String" -> HANDLEByReference::class.asClassName()
+            "Object" -> Unknown.ByReference::class.asClassName()
             else -> throw NotImplementedError("Type: $namespace.$name is not handled")
         }
     }

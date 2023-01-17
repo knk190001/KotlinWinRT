@@ -8,7 +8,7 @@ import com.sun.jna.platform.win32.Guid
 import com.sun.jna.platform.win32.WinNT.HRESULT
 import com.sun.jna.ptr.PointerByReference
 @FieldOrder("queryInterface","addRef","release")
-class IUnknown(ptr: Pointer? = Pointer.NULL) : Structure(ptr) {
+class IUnknownVtbl(ptr: Pointer? = Pointer.NULL) : Structure(ptr) {
     init {
         autoRead = true
         read()

@@ -5,23 +5,27 @@ import com.github.knk190001.winrtbinding.generator.model.traits.Trait
 
 data class SparseInterface(
     @Json("Name")
-    val name:String,
+    override val name:String,
     @Json("Namespace")
-    val namespace: String,
+    override val namespace: String,
     @Json("Guid")
-    val guid: String,
+    override val guid: String,
     @Json("Methods")
     val methods: List<SparseMethod>,
     @Json("GenericParameters")
     val genericParameters: List<SparseGenericParameter>?,
     @Json("Traits")
     val traits: List<Trait>
-): SparseEntity("Interface") {
-    fun projectType(typeVariable: String, newTypeReference: SparseTypeReference): SparseInterface {
+): SparseEntity("Interface"), DirectProjectable<SparseInterface>{
+    override fun projectType(typeVariable: String, newTypeReference: SparseTypeReference): SparseInterface {
         return this.copy(
             methods = methods.map { it.projectType(typeVariable, newTypeReference) },
             genericParameters = genericParameters!!.map { it.projectType(typeVariable, newTypeReference) }
         )
+    }
+
+    override fun withName(newName: String): SparseInterface {
+        return copy(name = newName)
     }
 }
 
