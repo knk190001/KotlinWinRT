@@ -26,6 +26,7 @@ import com.github.knk190001.winrtbinding.generator.model.traits.StaticInterface
 import com.github.knk190001.winrtbinding.generator.model.traits.StaticTrait
 import com.sun.jna.platform.win32.COM.Unknown
 import java.io.InvalidObjectException
+import java.lang.Exception
 import kotlin.io.path.Path
 import kotlin.io.path.forEachDirectoryEntry
 import kotlin.io.path.inputStream
@@ -55,6 +56,15 @@ class ABIGenerator2 : KotlinCodeGenerator {
             } else if (projectables.none { it.name == typeReference.name && it.namespace == typeReference.namespace } && !typeReference.name.endsWith(
                     '`'
                 )) {
+                try {
+                    typeReference.copy(
+                        name = "${
+                            typeReference.name.replaceAfter('_', "").dropLast(1)
+                        }`${typeReference.genericParameters!!.count()}"
+                    )
+                } catch (e: Exception) {
+                    println()
+                }
                 typeReference.copy(
                     name = "${
                         typeReference.name.replaceAfter('_', "").dropLast(1)
@@ -83,17 +93,16 @@ class ABIGenerator2 : KotlinCodeGenerator {
             }
 
         return entities.filter {
-            if (it is SparseInterface && it.genericParameters != null) {
-                return@filter false
-            }
-            true
+            it is SparseInterface && it.genericParameters == null || it !is SparseInterface
+        }.filter {
+            it is SparseDelegate && it.genericParameters == null || it !is SparseDelegate
         }.map {
             when (it) {
                 is SparseClass -> generateClass(it, lookupProjectable, projectInterface)
                 is SparseInterface -> generateInterface(it, lookupProjectable, projectInterface)
                 is SparseEnum -> generateEnum(it)
                 is SparseStruct -> generateStruct(it)
-                is SparseDelegate -> generateDelegate(it)
+                is SparseDelegate -> generateDelegate(it, lookupProjectable, projectInterface)
 
                 else -> throw InvalidObjectException("Object is not of type sparse class or sparse interface.")
             }
@@ -132,20 +141,21 @@ class ABIGenerator2 : KotlinCodeGenerator {
                 acc.projectType(sparseGenericParameter.name, sparseGenericParameter.type!!)
             }.withName(newName)
 
-            when (projectedInterface) {
-                is SparseInterface -> {
-                    generateInterface(
-                        projectedInterface,
-                        lookUpTypeReference
-                    ) { secondaryProjectionInterface, parameters ->
-                        if (!checkIfExists(secondaryProjectionInterface, parameters)) {
-                            secondaryProjections.add(secondaryProjectionInterface to parameters)
-                        }
+            val projectInterface: (DirectProjectable<*>, Collection<SparseGenericParameter>) -> Unit =
+                { secondaryProjectionInterface, parameters ->
+                    if (!checkIfExists(secondaryProjectionInterface, parameters)) {
+                        secondaryProjections.add(secondaryProjectionInterface to parameters)
                     }
                 }
-                is SparseDelegate -> {
-                    generateDelegate(projectedInterface)
+            when (projectedInterface) {
+                is SparseInterface -> {
+                    generateInterface(projectedInterface, lookUpTypeReference, projectInterface)
                 }
+
+                is SparseDelegate -> {
+                    generateDelegate(projectedInterface, lookUpTypeReference, projectInterface)
+                }
+
                 else -> {
                     throw NotImplementedError()
                 }
@@ -470,11 +480,17 @@ class ABIGenerator2 : KotlinCodeGenerator {
                 m.parameters.forEach {
                     addParameter(it.name, it.type.asClassName())
                     if (it.type.genericParameters != null) {
-                        projectInterface(lookUpTypeReference(it.type) as DirectProjectable<*>, it.type.genericParameters)
+                        projectInterface(
+                            lookUpTypeReference(it.type) as DirectProjectable<*>,
+                            it.type.genericParameters
+                        )
                     }
                 }
                 if (m.returnType.genericParameters != null) {
-                    projectInterface(lookUpTypeReference(method.returnType) as DirectProjectable<*>, typeReference.genericParameters!!)
+                    projectInterface(
+                        lookUpTypeReference(method.returnType) as DirectProjectable<*>,
+                        typeReference.genericParameters!!
+                    )
                 }
                 println("${sInterface.namespace}.${sInterface.name}")
                 returns(m.returnType.asClassName())
@@ -601,11 +617,10 @@ class ABIGenerator2 : KotlinCodeGenerator {
                     add(")))\n")
                 }
 
-                addStatement("if (hr.toInt() != 0) {")
-                indent()
+                beginControlFlow("if (hr.toInt() != 0) {")
                 addStatement("throw %T(hr.toString())", RuntimeException::class.asClassName())
-                unindent()
-                addStatement("}")
+                endControlFlow()
+
                 val returnMarshaller = Marshaller.marshals.getOrDefault(it.returnType.asKClass(), Marshaller.default)
                 val (unmarshalledName, unmarshallingCode) = returnMarshaller.generateFromNativeMarshalCode("resultValue")
 
@@ -622,7 +637,6 @@ class ABIGenerator2 : KotlinCodeGenerator {
         }.filterNotNull().forEach(typeSpec::addFunction)
         val abiSpec = TypeSpec.objectBuilder("ABI")
         if (sparseInterface.genericParameters != null && sparseInterface.genericParameters.all { it.type != null }) {
-//            println("Generating: ${sparseInterface.namespace}.${sparseInterface.name}")
             val piid = GuidGenerator.CreateIID(
                 SparseTypeReference(
                     sparseInterface.name,
@@ -661,7 +675,7 @@ fun SparseTypeReference.asClassName(): ClassName {
             "Void" -> Unit::class.asClassName()
             "String" -> String::class.asClassName()
             "UInt32&" -> UINTByReference::class.asClassName()
-            "Object" -> ClassName("com.sun.jna.platform.win32.COM","Unknown")
+            "Object" -> ClassName("com.sun.jna.platform.win32.COM", "Unknown")
             "Int64" -> Long::class.asClassName()
 //            "Object" -> Unknown::class.asClassName()
             else -> throw NotImplementedError("Type: $namespace.$name is not handled")

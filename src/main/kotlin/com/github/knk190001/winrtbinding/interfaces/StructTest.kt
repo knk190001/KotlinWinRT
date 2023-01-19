@@ -7,7 +7,7 @@ import com.sun.jna.platform.win32.WinDef.UINT
 
 
 @FieldOrder("field1","field2","field3")
-class StructTest(ptd: Pointer? = Pointer.NULL) : Structure(), Structure.ByReference {
+class StructTest(ptd: Pointer? = Pointer.NULL) : Structure(), Structure.ByValue {
     @JvmField
     var field1: UINT? = null
     @JvmField

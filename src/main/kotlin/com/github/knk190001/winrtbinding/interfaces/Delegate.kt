@@ -1,22 +1,29 @@
 package com.github.knk190001.winrtbinding.interfaces
 
-import com.sun.jna.Memory
-import com.sun.jna.Pointer
-import com.sun.jna.PointerType
-import com.sun.jna.Structure
+import com.sun.jna.*
 import com.sun.jna.Structure.FieldOrder
+import com.sun.jna.platform.win32.COM.Unknown
 import com.sun.jna.platform.win32.Guid.GUID
 import com.sun.jna.platform.win32.WinDef.UINT
 import com.sun.jna.platform.win32.WinNT.HRESULT
 import com.sun.jna.win32.StdCallLibrary.StdCallCallback
 
-open class Delegate<T : StdCallCallback>(ptr: Pointer? = Memory(12), val uuids: List<GUID>) : PointerType(ptr) {
+open class Delegate<T : StdCallCallback>(ptr: Pointer? = Memory(12)) : PointerType(ptr) {
     val delegateStruct by lazy { DelegateVtbl<T>(pointer.getPointer(0)) }
 
+    class ByReference <T : StdCallCallback>  : com.sun.jna.ptr.ByReference(Native.POINTER_SIZE) {
+        fun setValue(delegate: Delegate<T>) {
+            this.pointer.setPointer(0,delegate.pointer)
+        }
+
+        fun getValue(): Delegate<T> {
+            return Delegate(this.pointer.getPointer(0))
+        }
+    }
     companion object {
         fun <T : StdCallCallback> createDelegate(uuids: List<GUID>, fn: T): Delegate<T> {
             val vtbl = DelegateVtbl<T>(Pointer.NULL)
-            val newDelegate = Delegate<T>(uuids = uuids)
+            val newDelegate = Delegate<T>()
             newDelegate.pointer.setPointer(0, vtbl.pointer)
             newDelegate.pointer.setInt(8, 1)
             vtbl.fn = fn
