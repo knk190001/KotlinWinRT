@@ -674,6 +674,14 @@
         }
       ],
       "TraitType": "Static"
+    },
+    {
+      "DefaultInterface": {
+        "Name": "IJsonObject",
+        "Namespace": "Windows.Data.Json",
+        "GenericParameters": null
+      },
+      "TraitType": "DefaultInterface"
     }
   ],
   "Type": "Class"

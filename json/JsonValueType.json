@@ -9,5 +9,10 @@
     "Array": 4,
     "Object": 5
   },
+  "Traits": [
+    {
+      "TraitType": "ValueType"
+    }
+  ],
   "Type": "Enum"
 }

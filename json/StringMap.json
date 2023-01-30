@@ -318,6 +318,33 @@
   "Traits": [
     {
       "TraitType": "DirectActivation"
+    },
+    {
+      "DefaultInterface": {
+        "Name": "IMap`2",
+        "Namespace": "Windows.Foundation.Collections",
+        "GenericParameters": [
+          {
+            "Name": "K",
+            "Position": 0,
+            "Type": {
+              "Name": "String",
+              "Namespace": "System",
+              "GenericParameters": null
+            }
+          },
+          {
+            "Name": "V",
+            "Position": 1,
+            "Type": {
+              "Name": "String",
+              "Namespace": "System",
+              "GenericParameters": null
+            }
+          }
+        ]
+      },
+      "TraitType": "DefaultInterface"
     }
   ],
   "Type": "Class"

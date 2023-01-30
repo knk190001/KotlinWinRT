@@ -4,9 +4,9 @@ import com.beust.klaxon.Json
 
 data class SparseStruct(
     @Json("Name")
-    val name: String,
+    override val name: String,
     @Json("Namespace")
-    val namespace: String,
+    override val namespace: String,
     @Json("Fields")
     val fields: List<SparseField>
-): SparseEntity("Struct")
+): SparseEntity("Struct"), INamedEntity

@@ -1,16 +1,14 @@
 package com.github.knk190001.winrtbinding.generator
 
-import com.github.knk190001.winrtbinding.generator.model.entities.IProjectable
+import com.github.knk190001.winrtbinding.generator.model.entities.*
 import com.sun.jna.platform.win32.Guid
 import com.sun.jna.platform.win32.Guid.GUID
 import memeid.UUID
-import com.github.knk190001.winrtbinding.generator.model.entities.SparseInterface
-import com.github.knk190001.winrtbinding.generator.model.entities.SparseTypeReference
 import java.nio.charset.StandardCharsets
 
 
 object GuidGenerator {
-    fun getSignature(typeReference: SparseTypeReference, lookup: LookUpFn): String {
+    fun getSignature(typeReference: SparseTypeReference, lookup: LookUpProjectable): String {
         if (typeReference.isTypeOf("System", "Object")) {
             return "cinterface(IInspectable)"
         }
@@ -28,6 +26,7 @@ object GuidGenerator {
                 .joinToString(";")
 
             val entity = lookup(typeReference)
+
             return when (entity) {
                 is SparseInterface -> "pinterface(${entity.guid.guidToSignatureFormat()};$typeParameters)"
                 else -> throw IllegalArgumentException("Non interface type reference")
@@ -37,17 +36,69 @@ object GuidGenerator {
         return sInterface.guid.guidToSignatureFormat()
     }
 
-    private val wrtPInterfaceNamespaceNative = GUID("11f47ad5-7b73-42c0-abae-878b1e16adee")
+    fun getSignature2(typeReference: SparseTypeReference, lookup: LookUp): String {
+        val tr = typeReference.normalize()
+        if (tr.isTypeOf("System", "Object")) {
+            return "cinterface(IInspectable)"
+        }
+        if (tr.isTypeOf("System", "String")) {
+            return "string"
+        }
+        if (tr.isValueType(lookup)) {
+            when (tr.name) {
+                "Boolean" -> return "b1"
+                "Byte" -> return "u1"
+                "Char" -> return "c2"
+                "Double" -> return "f8"
+                "Guid" -> return "g16"
+                "Int16" -> return "i2"
+                "Int32" -> return "i4"
+                "Int64" -> return "i8"
+                "SByte" -> return "i1"
+                "Single" -> return "f4"
+                "UInt16" -> return "u2"
+                "UInt32" -> return "u4"
+                "UInt64" -> return "u8"
+                else -> {
+                    val declaration = lookup(tr)
+                    if (declaration is SparseEnum) {
+                        return "enum(${tr.namespace}.${tr.name};${if (declaration.isFlagEnum) "u4" else "i4"})"
+                    }
+                    if (declaration is SparseStruct) {
+                        val fields = declaration.fields.sortedBy { it.index }.map { getSignature2(it.type, lookup) }
+                            .joinToString(separator = ";")
+                        return "struct(${tr.namespace}.${tr.name};${fields})"
+                    }
+                    throw IllegalArgumentException("Invalid Value type")
+                }
+            }
+        } else {
+            val entity = lookup(typeReference)
+            if (entity is DirectProjectable<*> && typeReference.genericParameters != null) {
+                val typeParameters =
+                    typeReference.genericParameters.map { it.type }
+                        .joinToString(";") { getSignature2(it!!, lookup) }
+
+                return "pinterface(${entity.guid.guidToSignatureFormat()};$typeParameters)"
+            }
+            if (entity is SparseDelegate) {
+                return "delegate(${entity.guid.guidToSignatureFormat()})"
+            }
+            if (entity is SparseInterface) {
+                return entity.guid.guidToSignatureFormat()
+            }
+            if (entity is SparseClass) {
+                return "rc(${entity.namespace}.${entity.name};${getSignature2(entity.defaultInterface, lookup)})"
+            }
+        }
+        throw IllegalArgumentException("Invalid type")
+    }
+
+
+    //private val wrtPInterfaceNamespaceNative = GUID("11f47ad5-7b73-42c0-abae-878b1e16adee")
     private val wrtPinterfaceNamespaceJava = UUID.fromString("11f47ad5-7b73-42c0-abae-878b1e16adee")
-    fun CreateIID(type: SparseTypeReference, lookup: LookUpFn): Guid.GUID? {
-        val signature: String = getSignature(type, lookup)
-        val maxByteCount = (StandardCharsets.UTF_8.newEncoder().maxBytesPerChar() * signature.length).toInt()
-        var array: ByteArray = ByteArray(16 + maxByteCount)
-        val wrtPinterfaceNamespace: ByteArray = wrtPInterfaceNamespaceNative.toByteArray()
-        System.arraycopy(wrtPinterfaceNamespace, 0, array, 0, wrtPinterfaceNamespace.size)
-        val signatureBytes: ByteArray = signature.toByteArray(StandardCharsets.UTF_8)
-        System.arraycopy(signatureBytes, 0, array, 16, signatureBytes.size)
-        array = array.copyOfRange(0, 16 + signatureBytes.size)
+    fun CreateIID(type: SparseTypeReference, lookup: LookUp): GUID? {
+        val signature: String = getSignature2(type, lookup)
         return UUID.V5.from(wrtPinterfaceNamespaceJava, signature).toString()
             .let { GUID.fromString(it) }
     }
@@ -56,7 +107,33 @@ object GuidGenerator {
         return this.namespace == namespace && this.name == name
     }
 
+    private fun SparseTypeReference.isSystemType(name: String): Boolean {
+        return isTypeOf("System", name)
+
+    }
+
+    private fun SparseTypeReference.isValueType(
+        lookup: LookUp
+    ): Boolean {
+        val declaration = lookup(this)
+        return this.isSystemType("Boolean") ||
+                this.isSystemType("Byte") ||
+                this.isSystemType("Char") ||
+                this.isSystemType("Double") ||
+                this.isSystemType("Guid") ||
+                this.isSystemType("Int16") ||
+                this.isSystemType("Int32") ||
+                this.isSystemType("SByte") ||
+                this.isSystemType("Single") ||
+                this.isSystemType("UInt16") ||
+                this.isSystemType("UInt32") ||
+                this.isSystemType("UInt64") ||
+                declaration is SparseEnum ||
+                declaration is SparseStruct
+    }
+
     private fun String.guidToSignatureFormat(): String {
         return GUID.fromString(this).toGuidString().lowercase()
     }
+
 }

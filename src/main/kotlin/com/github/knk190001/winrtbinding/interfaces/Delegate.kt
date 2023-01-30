@@ -20,38 +20,35 @@ open class Delegate<T : StdCallCallback>(ptr: Pointer? = Memory(12)) : PointerTy
             return Delegate(this.pointer.getPointer(0))
         }
     }
-    companion object {
-        fun <T : StdCallCallback> createDelegate(uuids: List<GUID>, fn: T): Delegate<T> {
-            val vtbl = DelegateVtbl<T>(Pointer.NULL)
-            val newDelegate = Delegate<T>()
-            newDelegate.pointer.setPointer(0, vtbl.pointer)
-            newDelegate.pointer.setInt(8, 1)
-            vtbl.fn = fn
-            val unknown = vtbl.iUnknownVtbl
-            unknown!!.queryInterface = IUnknownVtbl.QueryInterface { thisPtr, iid, returnValue ->
-                returnValue.value = Pointer.NULL
-                if (thisPtr == Pointer.NULL) {
-                    return@QueryInterface HRESULT(UINT(0x80070057).toInt())
-                }
-                if (uuids.contains(iid.value)) {
-                    unknown.addRef(thisPtr)
-                    returnValue.value = newDelegate.pointer
-                    return@QueryInterface HRESULT(0)
-                }
 
-                return@QueryInterface HRESULT(-2147467262)
+    fun init(uuids: List<GUID>, fn: T) {
+        val vtbl = DelegateVtbl<T>(Pointer.NULL)
+        pointer.setPointer(0, vtbl.pointer)
+        pointer.setInt(Native.POINTER_SIZE.toLong(), 1)
+        vtbl.fn = fn
+        val unknown = vtbl.iUnknownVtbl
+        unknown!!.queryInterface = IUnknownVtbl.QueryInterface { thisPtr, iid, returnValue ->
+            returnValue.value = Pointer.NULL
+            if (thisPtr == Pointer.NULL) {
+                return@QueryInterface HRESULT(UINT(0x80070057).toInt())
             }
-            unknown.addRef = IUnknownVtbl.AddRef {
-                val refCount = newDelegate.pointer.getInt(8)
-                newDelegate.pointer.setInt(8, refCount + 1)
-                return@AddRef HRESULT(0)
+            if (uuids.contains(iid.value)) {
+                unknown.addRef(thisPtr)
+                returnValue.value = pointer
+                return@QueryInterface HRESULT(0)
             }
-            unknown.release = IUnknownVtbl.Release {
-                val refCount = newDelegate.pointer.getInt(8)
-                newDelegate.pointer.setInt(8, refCount - 1)
-                return@Release HRESULT(0)
-            }
-            return newDelegate
+
+            return@QueryInterface HRESULT(-2147467262)
+        }
+        unknown.addRef = IUnknownVtbl.AddRef {
+            val refCount = pointer.getInt(8)
+            pointer.setInt(8, refCount + 1)
+            return@AddRef HRESULT(0)
+        }
+        unknown.release = IUnknownVtbl.Release {
+            val refCount = pointer.getInt(8)
+            pointer.setInt(8, refCount - 1)
+            return@Release HRESULT(0)
         }
     }
 

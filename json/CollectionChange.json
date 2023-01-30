@@ -7,5 +7,10 @@
     "ItemRemoved": 2,
     "ItemChanged": 3
   },
+  "Traits": [
+    {
+      "TraitType": "ValueType"
+    }
+  ],
   "Type": "Enum"
 }

@@ -323,6 +323,14 @@
   "Traits": [
     {
       "TraitType": "DirectActivation"
+    },
+    {
+      "DefaultInterface": {
+        "Name": "IPropertySet",
+        "Namespace": "Windows.Foundation.Collections",
+        "GenericParameters": null
+      },
+      "TraitType": "DefaultInterface"
     }
   ],
   "Type": "Class"

@@ -18,4 +18,28 @@ data class SparseTypeReference(
             it.projectType(typeVariable, newTypeReference)
         })
     }
+
+    fun normalize(): SparseTypeReference {
+        return if (this.name.endsWith("&")) {
+            copy(name = name.dropLast(1))
+        } else if (this.name.contains("_")) {
+            copy(name = "${name.replaceAfter('_', "").dropLast(1)}`${genericParameters!!.count()}")
+        } else {
+            this
+        }
+    }
+
+    override operator fun equals(other: Any?): Boolean {
+        if (other !is INamedEntity) {
+            return false
+        }
+        return name == other.name && namespace == other.namespace
+    }
+
+    override fun hashCode(): Int {
+        var result = name.hashCode()
+        result = 31 * result + namespace.hashCode()
+        result = 31 * result + (genericParameters?.hashCode() ?: 0)
+        return result
+    }
 }

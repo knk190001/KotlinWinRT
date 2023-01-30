@@ -7,6 +7,7 @@ import com.sun.jna.Structure
 import com.sun.jna.Structure.FieldOrder
 
 fun generateStruct(sparseStruct: SparseStruct) = FileSpec.builder(sparseStruct.namespace, sparseStruct.name).apply {
+    addImport("com.github.knk190001.winrtbinding.interfaces", "getValue")
     val type = TypeSpec.classBuilder(sparseStruct.name).apply {
         val fields = sparseStruct.fields.sortedBy {
             it.index

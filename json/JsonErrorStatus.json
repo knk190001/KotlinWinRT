@@ -8,5 +8,10 @@
     "JsonValueNotFound": 3,
     "ImplementationLimit": 4
   },
+  "Traits": [
+    {
+      "TraitType": "ValueType"
+    }
+  ],
   "Type": "Enum"
 }

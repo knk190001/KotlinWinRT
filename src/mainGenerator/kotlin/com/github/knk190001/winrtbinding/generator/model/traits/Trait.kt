@@ -17,6 +17,8 @@ class TraitAdapter : TypeAdapter<Trait> {
             "DirectActivation" -> DirectActivationTrait::class
             "Static" -> StaticTrait::class
             "ValueType" -> ValueTypeTrait::class
+            "DefaultInterface" -> DefaultInterfaceTrait::class
+            "FlagEnum" -> FlagTrait::class
             else -> {
                 throw NotImplementedError("Trait $type has not been implemented")
             }

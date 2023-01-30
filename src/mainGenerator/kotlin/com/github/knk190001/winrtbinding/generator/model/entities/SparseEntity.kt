@@ -6,10 +6,10 @@ import com.beust.klaxon.TypeFor
 import kotlin.reflect.KClass
 
 @TypeFor(field = "type", EntityAdapter::class)
-open class SparseEntity(
+abstract class SparseEntity(
     @Json("Type")
     val type: String
-)
+): INamedEntity
 
 class EntityAdapter : TypeAdapter<SparseEntity> {
     override fun classFor(type: Any): KClass<out SparseEntity> {
