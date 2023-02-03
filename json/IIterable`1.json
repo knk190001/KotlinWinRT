@@ -16,10 +16,14 @@
             "Type": {
               "Name": "T",
               "Namespace": "",
-              "GenericParameters": null
+              "GenericParameters": null,
+              "IsArray": false,
+              "IsReference": false
             }
           }
-        ]
+        ],
+        "IsArray": false,
+        "IsReference": false
       }
     }
   ],

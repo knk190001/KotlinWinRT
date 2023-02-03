@@ -11,8 +11,6 @@ data class SparseClass(
     override val namespace: String,
     @Json("Interfaces")
     val interfaces: List<SparseTypeReference>,
-    @Json("Methods")
-    val methods: List<SparseMethod>,
     @Json("Traits")
     val traits: List<Trait>
 ) : SparseEntity("Class"), INamedEntity {

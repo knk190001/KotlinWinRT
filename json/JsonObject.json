@@ -5,12 +5,16 @@
     {
       "Name": "IJsonObject",
       "Namespace": "Windows.Data.Json",
-      "GenericParameters": null
+      "GenericParameters": null,
+      "IsArray": false,
+      "IsReference": false
     },
     {
       "Name": "IJsonValue",
       "Namespace": "Windows.Data.Json",
-      "GenericParameters": null
+      "GenericParameters": null,
+      "IsArray": false,
+      "IsReference": false
     },
     {
       "Name": "IMap`2",
@@ -22,7 +26,9 @@
           "Type": {
             "Name": "String",
             "Namespace": "System",
-            "GenericParameters": null
+            "GenericParameters": null,
+            "IsArray": false,
+            "IsReference": false
           }
         },
         {
@@ -31,10 +37,14 @@
           "Type": {
             "Name": "IJsonValue",
             "Namespace": "Windows.Data.Json",
-            "GenericParameters": null
+            "GenericParameters": null,
+            "IsArray": false,
+            "IsReference": false
           }
         }
-      ]
+      ],
+      "IsArray": false,
+      "IsReference": false
     },
     {
       "Name": "IIterable`1",
@@ -53,7 +63,9 @@
                 "Type": {
                   "Name": "String",
                   "Namespace": "System",
-                  "GenericParameters": null
+                  "GenericParameters": null,
+                  "IsArray": false,
+                  "IsReference": false
                 }
               },
               {
@@ -62,604 +74,33 @@
                 "Type": {
                   "Name": "IJsonValue",
                   "Namespace": "Windows.Data.Json",
-                  "GenericParameters": null
+                  "GenericParameters": null,
+                  "IsArray": false,
+                  "IsReference": false
                 }
               }
-            ]
+            ],
+            "IsArray": false,
+            "IsReference": false
           }
         }
-      ]
+      ],
+      "IsArray": false,
+      "IsReference": false
     },
     {
       "Name": "IJsonObjectWithDefaultValues",
       "Namespace": "Windows.Data.Json",
-      "GenericParameters": null
+      "GenericParameters": null,
+      "IsArray": false,
+      "IsReference": false
     },
     {
       "Name": "IStringable",
       "Namespace": "Windows.Foundation",
-      "GenericParameters": null
-    }
-  ],
-  "Methods": [
-    {
-      "Name": ".ctor",
-      "Parameters": [],
-      "ReturnType": {
-        "Name": "Void",
-        "Namespace": "System",
-        "GenericParameters": null
-      }
-    },
-    {
-      "Name": "GetNamedValue",
-      "Parameters": [
-        {
-          "Name": "name",
-          "Type": {
-            "Name": "String",
-            "Namespace": "System",
-            "GenericParameters": null
-          }
-        }
-      ],
-      "ReturnType": {
-        "Name": "JsonValue",
-        "Namespace": "Windows.Data.Json",
-        "GenericParameters": null
-      }
-    },
-    {
-      "Name": "SetNamedValue",
-      "Parameters": [
-        {
-          "Name": "name",
-          "Type": {
-            "Name": "String",
-            "Namespace": "System",
-            "GenericParameters": null
-          }
-        },
-        {
-          "Name": "value",
-          "Type": {
-            "Name": "IJsonValue",
-            "Namespace": "Windows.Data.Json",
-            "GenericParameters": null
-          }
-        }
-      ],
-      "ReturnType": {
-        "Name": "Void",
-        "Namespace": "System",
-        "GenericParameters": null
-      }
-    },
-    {
-      "Name": "GetNamedObject",
-      "Parameters": [
-        {
-          "Name": "name",
-          "Type": {
-            "Name": "String",
-            "Namespace": "System",
-            "GenericParameters": null
-          }
-        }
-      ],
-      "ReturnType": {
-        "Name": "JsonObject",
-        "Namespace": "Windows.Data.Json",
-        "GenericParameters": null
-      }
-    },
-    {
-      "Name": "GetNamedArray",
-      "Parameters": [
-        {
-          "Name": "name",
-          "Type": {
-            "Name": "String",
-            "Namespace": "System",
-            "GenericParameters": null
-          }
-        }
-      ],
-      "ReturnType": {
-        "Name": "JsonArray",
-        "Namespace": "Windows.Data.Json",
-        "GenericParameters": null
-      }
-    },
-    {
-      "Name": "GetNamedString",
-      "Parameters": [
-        {
-          "Name": "name",
-          "Type": {
-            "Name": "String",
-            "Namespace": "System",
-            "GenericParameters": null
-          }
-        }
-      ],
-      "ReturnType": {
-        "Name": "String",
-        "Namespace": "System",
-        "GenericParameters": null
-      }
-    },
-    {
-      "Name": "GetNamedNumber",
-      "Parameters": [
-        {
-          "Name": "name",
-          "Type": {
-            "Name": "String",
-            "Namespace": "System",
-            "GenericParameters": null
-          }
-        }
-      ],
-      "ReturnType": {
-        "Name": "Double",
-        "Namespace": "System",
-        "GenericParameters": null
-      }
-    },
-    {
-      "Name": "GetNamedBoolean",
-      "Parameters": [
-        {
-          "Name": "name",
-          "Type": {
-            "Name": "String",
-            "Namespace": "System",
-            "GenericParameters": null
-          }
-        }
-      ],
-      "ReturnType": {
-        "Name": "Boolean",
-        "Namespace": "System",
-        "GenericParameters": null
-      }
-    },
-    {
-      "Name": "get_ValueType",
-      "Parameters": [],
-      "ReturnType": {
-        "Name": "JsonValueType",
-        "Namespace": "Windows.Data.Json",
-        "GenericParameters": null
-      }
-    },
-    {
-      "Name": "Stringify",
-      "Parameters": [],
-      "ReturnType": {
-        "Name": "String",
-        "Namespace": "System",
-        "GenericParameters": null
-      }
-    },
-    {
-      "Name": "GetString",
-      "Parameters": [],
-      "ReturnType": {
-        "Name": "String",
-        "Namespace": "System",
-        "GenericParameters": null
-      }
-    },
-    {
-      "Name": "GetNumber",
-      "Parameters": [],
-      "ReturnType": {
-        "Name": "Double",
-        "Namespace": "System",
-        "GenericParameters": null
-      }
-    },
-    {
-      "Name": "GetBoolean",
-      "Parameters": [],
-      "ReturnType": {
-        "Name": "Boolean",
-        "Namespace": "System",
-        "GenericParameters": null
-      }
-    },
-    {
-      "Name": "GetArray",
-      "Parameters": [],
-      "ReturnType": {
-        "Name": "JsonArray",
-        "Namespace": "Windows.Data.Json",
-        "GenericParameters": null
-      }
-    },
-    {
-      "Name": "GetObject",
-      "Parameters": [],
-      "ReturnType": {
-        "Name": "JsonObject",
-        "Namespace": "Windows.Data.Json",
-        "GenericParameters": null
-      }
-    },
-    {
-      "Name": "Lookup",
-      "Parameters": [
-        {
-          "Name": "key",
-          "Type": {
-            "Name": "String",
-            "Namespace": "System",
-            "GenericParameters": null
-          }
-        }
-      ],
-      "ReturnType": {
-        "Name": "IJsonValue",
-        "Namespace": "Windows.Data.Json",
-        "GenericParameters": null
-      }
-    },
-    {
-      "Name": "get_Size",
-      "Parameters": [],
-      "ReturnType": {
-        "Name": "UInt32",
-        "Namespace": "System",
-        "GenericParameters": null
-      }
-    },
-    {
-      "Name": "HasKey",
-      "Parameters": [
-        {
-          "Name": "key",
-          "Type": {
-            "Name": "String",
-            "Namespace": "System",
-            "GenericParameters": null
-          }
-        }
-      ],
-      "ReturnType": {
-        "Name": "Boolean",
-        "Namespace": "System",
-        "GenericParameters": null
-      }
-    },
-    {
-      "Name": "GetView",
-      "Parameters": [],
-      "ReturnType": {
-        "Name": "IMapView`2",
-        "Namespace": "Windows.Foundation.Collections",
-        "GenericParameters": [
-          {
-            "Name": "K",
-            "Position": 0,
-            "Type": {
-              "Name": "String",
-              "Namespace": "System",
-              "GenericParameters": null
-            }
-          },
-          {
-            "Name": "V",
-            "Position": 1,
-            "Type": {
-              "Name": "IJsonValue",
-              "Namespace": "Windows.Data.Json",
-              "GenericParameters": null
-            }
-          }
-        ]
-      }
-    },
-    {
-      "Name": "Insert",
-      "Parameters": [
-        {
-          "Name": "key",
-          "Type": {
-            "Name": "String",
-            "Namespace": "System",
-            "GenericParameters": null
-          }
-        },
-        {
-          "Name": "value",
-          "Type": {
-            "Name": "IJsonValue",
-            "Namespace": "Windows.Data.Json",
-            "GenericParameters": null
-          }
-        }
-      ],
-      "ReturnType": {
-        "Name": "Boolean",
-        "Namespace": "System",
-        "GenericParameters": null
-      }
-    },
-    {
-      "Name": "Remove",
-      "Parameters": [
-        {
-          "Name": "key",
-          "Type": {
-            "Name": "String",
-            "Namespace": "System",
-            "GenericParameters": null
-          }
-        }
-      ],
-      "ReturnType": {
-        "Name": "Void",
-        "Namespace": "System",
-        "GenericParameters": null
-      }
-    },
-    {
-      "Name": "Clear",
-      "Parameters": [],
-      "ReturnType": {
-        "Name": "Void",
-        "Namespace": "System",
-        "GenericParameters": null
-      }
-    },
-    {
-      "Name": "First",
-      "Parameters": [],
-      "ReturnType": {
-        "Name": "IIterator`1",
-        "Namespace": "Windows.Foundation.Collections",
-        "GenericParameters": [
-          {
-            "Name": "T",
-            "Position": 0,
-            "Type": {
-              "Name": "IKeyValuePair`2",
-              "Namespace": "Windows.Foundation.Collections",
-              "GenericParameters": [
-                {
-                  "Name": "K",
-                  "Position": 0,
-                  "Type": {
-                    "Name": "String",
-                    "Namespace": "System",
-                    "GenericParameters": null
-                  }
-                },
-                {
-                  "Name": "V",
-                  "Position": 1,
-                  "Type": {
-                    "Name": "IJsonValue",
-                    "Namespace": "Windows.Data.Json",
-                    "GenericParameters": null
-                  }
-                }
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
-      "Name": "GetNamedValue",
-      "Parameters": [
-        {
-          "Name": "name",
-          "Type": {
-            "Name": "String",
-            "Namespace": "System",
-            "GenericParameters": null
-          }
-        },
-        {
-          "Name": "defaultValue",
-          "Type": {
-            "Name": "JsonValue",
-            "Namespace": "Windows.Data.Json",
-            "GenericParameters": null
-          }
-        }
-      ],
-      "ReturnType": {
-        "Name": "JsonValue",
-        "Namespace": "Windows.Data.Json",
-        "GenericParameters": null
-      }
-    },
-    {
-      "Name": "GetNamedObject",
-      "Parameters": [
-        {
-          "Name": "name",
-          "Type": {
-            "Name": "String",
-            "Namespace": "System",
-            "GenericParameters": null
-          }
-        },
-        {
-          "Name": "defaultValue",
-          "Type": {
-            "Name": "JsonObject",
-            "Namespace": "Windows.Data.Json",
-            "GenericParameters": null
-          }
-        }
-      ],
-      "ReturnType": {
-        "Name": "JsonObject",
-        "Namespace": "Windows.Data.Json",
-        "GenericParameters": null
-      }
-    },
-    {
-      "Name": "GetNamedString",
-      "Parameters": [
-        {
-          "Name": "name",
-          "Type": {
-            "Name": "String",
-            "Namespace": "System",
-            "GenericParameters": null
-          }
-        },
-        {
-          "Name": "defaultValue",
-          "Type": {
-            "Name": "String",
-            "Namespace": "System",
-            "GenericParameters": null
-          }
-        }
-      ],
-      "ReturnType": {
-        "Name": "String",
-        "Namespace": "System",
-        "GenericParameters": null
-      }
-    },
-    {
-      "Name": "GetNamedArray",
-      "Parameters": [
-        {
-          "Name": "name",
-          "Type": {
-            "Name": "String",
-            "Namespace": "System",
-            "GenericParameters": null
-          }
-        },
-        {
-          "Name": "defaultValue",
-          "Type": {
-            "Name": "JsonArray",
-            "Namespace": "Windows.Data.Json",
-            "GenericParameters": null
-          }
-        }
-      ],
-      "ReturnType": {
-        "Name": "JsonArray",
-        "Namespace": "Windows.Data.Json",
-        "GenericParameters": null
-      }
-    },
-    {
-      "Name": "GetNamedNumber",
-      "Parameters": [
-        {
-          "Name": "name",
-          "Type": {
-            "Name": "String",
-            "Namespace": "System",
-            "GenericParameters": null
-          }
-        },
-        {
-          "Name": "defaultValue",
-          "Type": {
-            "Name": "Double",
-            "Namespace": "System",
-            "GenericParameters": null
-          }
-        }
-      ],
-      "ReturnType": {
-        "Name": "Double",
-        "Namespace": "System",
-        "GenericParameters": null
-      }
-    },
-    {
-      "Name": "GetNamedBoolean",
-      "Parameters": [
-        {
-          "Name": "name",
-          "Type": {
-            "Name": "String",
-            "Namespace": "System",
-            "GenericParameters": null
-          }
-        },
-        {
-          "Name": "defaultValue",
-          "Type": {
-            "Name": "Boolean",
-            "Namespace": "System",
-            "GenericParameters": null
-          }
-        }
-      ],
-      "ReturnType": {
-        "Name": "Boolean",
-        "Namespace": "System",
-        "GenericParameters": null
-      }
-    },
-    {
-      "Name": "ToString",
-      "Parameters": [],
-      "ReturnType": {
-        "Name": "String",
-        "Namespace": "System",
-        "GenericParameters": null
-      }
-    },
-    {
-      "Name": "Parse",
-      "Parameters": [
-        {
-          "Name": "input",
-          "Type": {
-            "Name": "String",
-            "Namespace": "System",
-            "GenericParameters": null
-          }
-        }
-      ],
-      "ReturnType": {
-        "Name": "JsonObject",
-        "Namespace": "Windows.Data.Json",
-        "GenericParameters": null
-      }
-    },
-    {
-      "Name": "TryParse",
-      "Parameters": [
-        {
-          "Name": "input",
-          "Type": {
-            "Name": "String",
-            "Namespace": "System",
-            "GenericParameters": null
-          }
-        },
-        {
-          "Name": "result",
-          "Type": {
-            "Name": "JsonObject&",
-            "Namespace": "Windows.Data.Json",
-            "GenericParameters": null
-          }
-        }
-      ],
-      "ReturnType": {
-        "Name": "Boolean",
-        "Namespace": "System",
-        "GenericParameters": null
-      }
+      "GenericParameters": null,
+      "IsArray": false,
+      "IsReference": false
     }
   ],
   "Traits": [
@@ -679,7 +120,9 @@
       "DefaultInterface": {
         "Name": "IJsonObject",
         "Namespace": "Windows.Data.Json",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       },
       "TraitType": "DefaultInterface"
     }

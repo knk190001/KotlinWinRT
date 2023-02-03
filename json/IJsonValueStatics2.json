@@ -9,7 +9,9 @@
       "ReturnType": {
         "Name": "JsonValue",
         "Namespace": "Windows.Data.Json",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     }
   ],

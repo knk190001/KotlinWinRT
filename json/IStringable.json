@@ -9,7 +9,9 @@
       "ReturnType": {
         "Name": "String",
         "Namespace": "System",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     }
   ],

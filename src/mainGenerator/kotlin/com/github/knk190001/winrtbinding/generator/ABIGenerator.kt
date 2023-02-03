@@ -5,16 +5,13 @@ import com.beust.klaxon.Klaxon
 import com.beust.klaxon.Parser
 import com.github.knk190001.winrtbinding.generator.model.entities.*
 import com.squareup.kotlinpoet.*
-import com.sun.jna.Function
 import com.sun.jna.Native
 import com.sun.jna.Pointer
 import com.sun.jna.PointerType
-import com.sun.jna.platform.win32.Guid.IID
 import com.sun.jna.platform.win32.Guid.REFIID
 import com.sun.jna.platform.win32.WinDef.UINT
 import com.sun.jna.platform.win32.WinDef.UINTByReference
 import com.sun.jna.platform.win32.WinNT.HANDLEByReference
-import com.sun.jna.platform.win32.WinNT.HRESULT
 import com.sun.jna.ptr.ByReference
 import com.sun.jna.ptr.ByteByReference
 import com.sun.jna.ptr.DoubleByReference
@@ -34,6 +31,8 @@ import kotlin.reflect.KClass
 typealias  LookUpProjectable = (SparseTypeReference) -> DirectProjectable<*>
 typealias  LookUp = (SparseTypeReference) -> SparseEntity
 
+typealias ProjectInterface = (DirectProjectable<*>, List<SparseGenericParameter>) -> Unit
+
 @Generator
 class ABIGenerator2 : KotlinCodeGenerator {
     override fun generateKotlin(): Collection<FileSpec> {
@@ -46,15 +45,6 @@ class ABIGenerator2 : KotlinCodeGenerator {
             println(it["Name"])
             Klaxon().parse<SparseEntity>(it.toJsonString())
         }.filterNotNull()
-
-        //val projectables = entities.filterIsInstance<DirectProjectable<*>>()
-
-//        val lookupProjectable: LookUpProjectable = { typeReference ->
-//            val tr = typeReference.normalize()
-//            projectables.first {
-//                tr.equals(it)
-//            }
-//        }
 
         val lookUp: LookUp = { typeReference ->
             val tr = typeReference.normalize()
@@ -123,7 +113,7 @@ class ABIGenerator2 : KotlinCodeGenerator {
                 acc.projectType(sparseGenericParameter.name, sparseGenericParameter.type!!)
             }.withName(newName)
 
-            val projectInterface: (DirectProjectable<*>, List<SparseGenericParameter>) -> Unit =
+            val projectInterface: ProjectInterface =
                 { secondaryProjectionInterface, parameters ->
                     if (!checkIfExists(secondaryProjectionInterface, parameters)) {
                         secondaryProjections.add(secondaryProjectionInterface to parameters)
@@ -223,7 +213,7 @@ class ABIGenerator2 : KotlinCodeGenerator {
             if (it.genericParameters == null) {
                 it
             } else {
-                it.copy(name = "${it.name.dropLast(2)}${getProjectedName(it.genericParameters)}")
+                it.copy(name = "${it.name.replaceAfter('`',"").dropLast(1)}${getProjectedName(it.genericParameters)}")
             }
         }.map {
             FunSpec.builder("as${it.name}").apply {
@@ -300,8 +290,7 @@ class ABIGenerator2 : KotlinCodeGenerator {
     }
 
     private fun isMethodValid(method: SparseMethod): Boolean {
-        return method.parameters.none { it.type.name.contains('[') } &&
-                !method.returnType.name.contains('[')
+        return method.parameters.none { it.type.isArray } && !method.returnType.isArray
     }
 
     private fun generateDirectActivator(builder: TypeSpec.Builder, sClass: SparseClass) {
@@ -463,7 +452,6 @@ class ABIGenerator2 : KotlinCodeGenerator {
         projectInterface: (DirectProjectable<*>, Collection<SparseGenericParameter>) -> Unit,
     ): Collection<FunSpec> {
         val sInterface = lookUpTypeReference(typeReference) as SparseInterface
-        //if (sInterface.genericParameters != null) return emptyList()
         return sInterface.methods.filter(::isMethodValid).map { method ->
             val m = if (typeReference.genericParameters != null) {
                 typeReference.genericParameters.fold(method) { acc, genericParameter ->
@@ -508,158 +496,6 @@ class ABIGenerator2 : KotlinCodeGenerator {
             }.build()
         }.toList()
     }
-
-    private fun generateInterface(
-        sparseInterface: SparseInterface,
-        lookUpTypeReference: LookUp,
-        projectInterface: (DirectProjectable<*>, List<SparseGenericParameter>) -> Unit
-    ): FileSpec {
-        val fileSpec = FileSpec.builder(sparseInterface.namespace, sparseInterface.name)
-        fileSpec.addImport("com.github.knk190001.winrtbinding", "handleToString")
-        fileSpec.addImport("com.github.knk190001.winrtbinding", "toHandle")
-        fileSpec.addImport("com.github.knk190001.winrtbinding.interfaces", "getValue")
-        val typeSpec = TypeSpec.classBuilder(sparseInterface.name)
-
-        typeSpec.superclass(PointerType::class)
-        val byRef = TypeSpec.classBuilder("ByReference")
-        byRef.superclass(ByReference::class)
-        val ptrSize = MemberName(Native::class.java.name, "POINTER_SIZE")
-        byRef.addSuperclassConstructorParameter("%M", ptrSize)
-
-        val getValueSpec = FunSpec.builder("getValue")
-        getValueSpec.returns(ClassName("", sparseInterface.name))
-
-        val getValueCode = CodeBlock.builder().apply {
-            addStatement("return %T(pointer.getPointer(0))", ClassName("", sparseInterface.name))
-        }.build()
-        getValueSpec.addCode(getValueCode)
-
-        byRef.addFunction(getValueSpec.build())
-
-        val setValueSpec = FunSpec.builder("setValue")
-        setValueSpec.addParameter("value", ClassName("", sparseInterface.name))
-
-        val setValueCode = CodeBlock.builder().apply {
-            addStatement("pointer.setPointer(0, value.pointer)")
-        }.build()
-        setValueSpec.addCode(setValueCode)
-
-        byRef.addFunction(setValueSpec.build())
-
-        val vtblPtrSpec = PropertySpec.builder("vtblPtr", Pointer::class)
-            .getter(FunSpec.getterBuilder().addCode("return pointer.getPointer(0)").build()).build()
-
-        typeSpec.addProperty(vtblPtrSpec)
-
-        val companionObjectSpec = TypeSpec.companionObjectBuilder().apply {
-
-
-        }.build()
-
-        typeSpec.addType(companionObjectSpec)
-
-        val constructorSpec = FunSpec.constructorBuilder()
-        val ptrParameterSpec = ParameterSpec.builder("ptr", Pointer::class.asClassName().copy(true))
-            .defaultValue("Pointer.NULL")
-        constructorSpec.addParameter(ptrParameterSpec.build())
-        typeSpec.primaryConstructor(constructorSpec.build())
-        typeSpec.addSuperclassConstructorParameter("ptr")
-
-
-        sparseInterface.methods.mapIndexed { i, it ->
-            val builder = FunSpec.builder(it.name)
-            it.parameters.forEach { param ->
-                builder.addParameter(param.name, param.type.asClassName())
-                if (param.type.genericParameters != null) {
-                    projectInterface(
-                        lookUpTypeReference(param.type) as DirectProjectable<*>,
-                        param.type.genericParameters
-                    )
-                }
-            }
-
-            if (it.returnType.genericParameters != null) {
-                projectInterface(
-                    lookUpTypeReference(it.returnType) as DirectProjectable<*>,
-                    it.returnType.genericParameters
-                )
-            }
-
-            val stdConventionMember = MemberName(Function::class.asClassName(), "ALT_CONVENTION")
-            val code = CodeBlock.builder().apply {
-                addStatement(
-                    "val fnPtr = vtblPtr.getPointer(${i + 6}L * %M)",
-                    MemberName(Native::class.java.name, "POINTER_SIZE")
-                )
-                addStatement("val fn = %T.getFunction(fnPtr, %M)", Function::class.asClassName(), stdConventionMember)
-
-                val marshaledNames = it.parameters.map {
-                    val marshalResult =
-                        Marshaller.marshals.getOrDefault(it.type.asKClass(), Marshaller.default)
-                            .generateToNativeMarshalCode(it.name)
-                    add(marshalResult.second)
-                    marshalResult.first
-                }
-
-                if (it.returnType.name != "Void") {
-                    addStatement("val result = %T()", it.returnType.byReferenceClassName())
-                }
-                add("val hr = %T(fn.invokeInt(arrayOf(pointer, ", HRESULT::class.asClassName())
-                marshaledNames.forEach {
-                    add("${it}, ")
-                }
-                if (it.returnType.name != "Void") {
-                    add("result)))\n")
-                } else {
-                    add(")))\n")
-                }
-
-                beginControlFlow("if (hr.toInt() != 0) {")
-                addStatement("throw %T(hr.toString())", RuntimeException::class.asClassName())
-                endControlFlow()
-
-                val returnMarshaller = Marshaller.marshals.getOrDefault(it.returnType.asKClass(), Marshaller.default)
-                val (unmarshalledName, unmarshallingCode) = returnMarshaller.generateFromNativeMarshalCode("resultValue")
-
-                if (it.returnType.name != "Void") {
-                    addStatement("val resultValue = result.getValue()")
-                    add(unmarshallingCode)
-                    addStatement("return $unmarshalledName")
-                }
-            }
-
-            builder.addCode(code.build())
-            builder.returns(it.returnType.asClassName())
-            if (isMethodValid(it)) builder.build() else null
-        }.filterNotNull().forEach(typeSpec::addFunction)
-        val abiSpec = TypeSpec.objectBuilder("ABI")
-        if (sparseInterface.genericParameters != null && sparseInterface.genericParameters.all { it.type != null }) {
-            val piid = GuidGenerator.CreateIID(
-                SparseTypeReference(
-                    sparseInterface.name,
-                    sparseInterface.namespace,
-                    sparseInterface.genericParameters
-                ), lookUpTypeReference
-            )!!.toGuidString().filter { it.isLetterOrDigit() }.lowercase()
-            val piidSpec = PropertySpec.builder("PIID", IID::class).apply {
-                initializer(CodeBlock.of("%T(%S)", IID::class, piid))
-            }.build()
-
-            abiSpec.addProperty(piidSpec)
-
-        }
-        val iidSpec = PropertySpec.builder("IID", IID::class.asClassName()).apply {
-            this.initializer("%T(%S)", IID::class.asClassName(), sparseInterface.guid)
-        }
-        abiSpec.addProperty(iidSpec.build())
-
-        typeSpec.addType(abiSpec.build())
-        typeSpec.addType(byRef.build())
-        fileSpec.addType(typeSpec.build())
-
-        return fileSpec.build()
-    }
-
 }
 
 fun SparseTypeReference.asClassName(): ClassName {
@@ -678,13 +514,13 @@ fun SparseTypeReference.asClassName(): ClassName {
             else -> throw NotImplementedError("Type: $namespace.$name is not handled")
         }
     }
-    if (this.name.endsWith("&")) {
+    if (this.isReference) {
         if (genericParameters != null) {
             val suffix = getProjectedName(genericParameters)
-            val name = "${this.name.substring(0, this.name.length - 3)}$suffix"
+            val name = "${this.name.replaceAfter('`',"").dropLast(1)}$suffix"
             return ClassName("${this.namespace}.$name", "ByReference")
         }
-        return ClassName("${this.namespace}.${name.subSequence(0, name.lastIndex)}", "ByReference")
+        return ClassName("${this.namespace}.${name}", "ByReference")
     }
     if (genericParameters != null) {
         val suffix = getProjectedName(genericParameters)
@@ -736,7 +572,6 @@ fun SparseTypeReference.byReferenceClassName(): ClassName {
             "Int32" -> IntByReference::class.asClassName()
             "Void" -> Unit::class.asClassName()
             "String" -> HANDLEByReference::class.asClassName()
-//            "Object" -> Unknown.ByReference::class.asClassName()
             "Object" -> ClassName("com.sun.jna.platform.win32.COM.Unknown", "ByReference")
             else -> throw NotImplementedError("Type: $namespace.$name is not handled")
         }

@@ -9,7 +9,9 @@
       "ReturnType": {
         "Name": "JsonValueType",
         "Namespace": "Windows.Data.Json",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     },
     {
@@ -18,7 +20,9 @@
       "ReturnType": {
         "Name": "String",
         "Namespace": "System",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     },
     {
@@ -27,7 +31,9 @@
       "ReturnType": {
         "Name": "String",
         "Namespace": "System",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     },
     {
@@ -36,7 +42,9 @@
       "ReturnType": {
         "Name": "Double",
         "Namespace": "System",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     },
     {
@@ -45,7 +53,9 @@
       "ReturnType": {
         "Name": "Boolean",
         "Namespace": "System",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     },
     {
@@ -54,7 +64,9 @@
       "ReturnType": {
         "Name": "JsonArray",
         "Namespace": "Windows.Data.Json",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     },
     {
@@ -63,7 +75,9 @@
       "ReturnType": {
         "Name": "JsonObject",
         "Namespace": "Windows.Data.Json",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     }
   ],

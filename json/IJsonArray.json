@@ -11,14 +11,19 @@
           "Type": {
             "Name": "UInt32",
             "Namespace": "System",
-            "GenericParameters": null
-          }
+            "GenericParameters": null,
+            "IsArray": false,
+            "IsReference": false
+          },
+          "ParameterType": "In"
         }
       ],
       "ReturnType": {
         "Name": "JsonObject",
         "Namespace": "Windows.Data.Json",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     },
     {
@@ -29,14 +34,19 @@
           "Type": {
             "Name": "UInt32",
             "Namespace": "System",
-            "GenericParameters": null
-          }
+            "GenericParameters": null,
+            "IsArray": false,
+            "IsReference": false
+          },
+          "ParameterType": "In"
         }
       ],
       "ReturnType": {
         "Name": "JsonArray",
         "Namespace": "Windows.Data.Json",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     },
     {
@@ -47,14 +57,19 @@
           "Type": {
             "Name": "UInt32",
             "Namespace": "System",
-            "GenericParameters": null
-          }
+            "GenericParameters": null,
+            "IsArray": false,
+            "IsReference": false
+          },
+          "ParameterType": "In"
         }
       ],
       "ReturnType": {
         "Name": "String",
         "Namespace": "System",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     },
     {
@@ -65,14 +80,19 @@
           "Type": {
             "Name": "UInt32",
             "Namespace": "System",
-            "GenericParameters": null
-          }
+            "GenericParameters": null,
+            "IsArray": false,
+            "IsReference": false
+          },
+          "ParameterType": "In"
         }
       ],
       "ReturnType": {
         "Name": "Double",
         "Namespace": "System",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     },
     {
@@ -83,14 +103,19 @@
           "Type": {
             "Name": "UInt32",
             "Namespace": "System",
-            "GenericParameters": null
-          }
+            "GenericParameters": null,
+            "IsArray": false,
+            "IsReference": false
+          },
+          "ParameterType": "In"
         }
       ],
       "ReturnType": {
         "Name": "Boolean",
         "Namespace": "System",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     }
   ],

@@ -9,6 +9,8 @@ import com.sun.jna.Structure.FieldOrder
 fun generateStruct(sparseStruct: SparseStruct) = FileSpec.builder(sparseStruct.namespace, sparseStruct.name).apply {
     addImport("com.github.knk190001.winrtbinding.interfaces", "getValue")
     val type = TypeSpec.classBuilder(sparseStruct.name).apply {
+        addModifiers(KModifier.SEALED)
+
         val fields = sparseStruct.fields.sortedBy {
             it.index
         }
@@ -33,6 +35,19 @@ fun generateStruct(sparseStruct: SparseStruct) = FileSpec.builder(sparseStruct.n
         val constructor = FunSpec.constructorBuilder()
             .addParameter(ptrParameterSpec)
             .build()
+
+
+        val byReference = TypeSpec.classBuilder("ByReference").apply {
+            superclass(ClassName(sparseStruct.namespace,sparseStruct.name))
+            addSuperinterface(Structure.ByValue::class)
+
+            val getValueFn = FunSpec.builder("getValue").apply {
+                addCode("return this")
+                returns(ClassName(sparseStruct.namespace,sparseStruct.name))
+            }.build()
+            addFunction(getValueFn)
+        }.build()
+        addType(byReference)
 
         primaryConstructor(constructor)
         addSuperclassConstructorParameter("ptr")

@@ -11,14 +11,19 @@
           "Type": {
             "Name": "Int32",
             "Namespace": "System",
-            "GenericParameters": null
-          }
+            "GenericParameters": null,
+            "IsArray": false,
+            "IsReference": false
+          },
+          "ParameterType": "In"
         }
       ],
       "ReturnType": {
         "Name": "JsonErrorStatus",
         "Namespace": "Windows.Data.Json",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     }
   ],

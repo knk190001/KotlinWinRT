@@ -6,7 +6,9 @@ data class SparseParameter(
     @Json("Name")
     val name:String,
     @Json("Type")
-    val type: SparseTypeReference
+    val type: SparseTypeReference,
+    @Json("ParameterType")
+    val parameterType: ParameterType
 ){
     fun projectType(typeVariable: String, newTypeReference: SparseTypeReference): SparseParameter {
         return copy(

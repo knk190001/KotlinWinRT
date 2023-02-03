@@ -11,14 +11,19 @@
           "Type": {
             "Name": "K",
             "Namespace": "",
-            "GenericParameters": null
-          }
+            "GenericParameters": null,
+            "IsArray": false,
+            "IsReference": false
+          },
+          "ParameterType": "In"
         }
       ],
       "ReturnType": {
         "Name": "V",
         "Namespace": "",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     },
     {
@@ -27,7 +32,9 @@
       "ReturnType": {
         "Name": "UInt32",
         "Namespace": "System",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     },
     {
@@ -38,14 +45,19 @@
           "Type": {
             "Name": "K",
             "Namespace": "",
-            "GenericParameters": null
-          }
+            "GenericParameters": null,
+            "IsArray": false,
+            "IsReference": false
+          },
+          "ParameterType": "In"
         }
       ],
       "ReturnType": {
         "Name": "Boolean",
         "Namespace": "System",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     },
     {
@@ -61,7 +73,9 @@
             "Type": {
               "Name": "K",
               "Namespace": "",
-              "GenericParameters": null
+              "GenericParameters": null,
+              "IsArray": false,
+              "IsReference": false
             }
           },
           {
@@ -70,10 +84,14 @@
             "Type": {
               "Name": "V",
               "Namespace": "",
-              "GenericParameters": null
+              "GenericParameters": null,
+              "IsArray": false,
+              "IsReference": false
             }
           }
-        ]
+        ],
+        "IsArray": false,
+        "IsReference": false
       }
     },
     {
@@ -84,22 +102,30 @@
           "Type": {
             "Name": "K",
             "Namespace": "",
-            "GenericParameters": null
-          }
+            "GenericParameters": null,
+            "IsArray": false,
+            "IsReference": false
+          },
+          "ParameterType": "In"
         },
         {
           "Name": "value",
           "Type": {
             "Name": "V",
             "Namespace": "",
-            "GenericParameters": null
-          }
+            "GenericParameters": null,
+            "IsArray": false,
+            "IsReference": false
+          },
+          "ParameterType": "In"
         }
       ],
       "ReturnType": {
         "Name": "Boolean",
         "Namespace": "System",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     },
     {
@@ -110,14 +136,19 @@
           "Type": {
             "Name": "K",
             "Namespace": "",
-            "GenericParameters": null
-          }
+            "GenericParameters": null,
+            "IsArray": false,
+            "IsReference": false
+          },
+          "ParameterType": "In"
         }
       ],
       "ReturnType": {
         "Name": "Void",
         "Namespace": "System",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     },
     {
@@ -126,7 +157,9 @@
       "ReturnType": {
         "Name": "Void",
         "Namespace": "System",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     }
   ],

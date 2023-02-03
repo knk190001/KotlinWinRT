@@ -15,25 +15,35 @@
             "Type": {
               "Name": "T",
               "Namespace": "",
-              "GenericParameters": null
+              "GenericParameters": null,
+              "IsArray": false,
+              "IsReference": false
             }
           }
-        ]
-      }
+        ],
+        "IsArray": false,
+        "IsReference": false
+      },
+      "ParameterType": "In"
     },
     {
       "Name": "event",
       "Type": {
         "Name": "IVectorChangedEventArgs",
         "Namespace": "Windows.Foundation.Collections",
-        "GenericParameters": null
-      }
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
+      },
+      "ParameterType": "In"
     }
   ],
   "ReturnType": {
     "Name": "Void",
     "Namespace": "System",
-    "GenericParameters": null
+    "GenericParameters": null,
+    "IsArray": false,
+    "IsReference": false
   },
   "GenericParameters": [
     {

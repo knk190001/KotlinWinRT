@@ -11,14 +11,19 @@
           "Type": {
             "Name": "String",
             "Namespace": "System",
-            "GenericParameters": null
-          }
+            "GenericParameters": null,
+            "IsArray": false,
+            "IsReference": false
+          },
+          "ParameterType": "In"
         }
       ],
       "ReturnType": {
         "Name": "JsonObject",
         "Namespace": "Windows.Data.Json",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     },
     {
@@ -29,22 +34,30 @@
           "Type": {
             "Name": "String",
             "Namespace": "System",
-            "GenericParameters": null
-          }
+            "GenericParameters": null,
+            "IsArray": false,
+            "IsReference": false
+          },
+          "ParameterType": "In"
         },
         {
           "Name": "result",
           "Type": {
-            "Name": "JsonObject&",
+            "Name": "JsonObject",
             "Namespace": "Windows.Data.Json",
-            "GenericParameters": null
-          }
+            "GenericParameters": null,
+            "IsArray": false,
+            "IsReference": true
+          },
+          "ParameterType": "Out"
         }
       ],
       "ReturnType": {
         "Name": "Boolean",
         "Namespace": "System",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     }
   ],

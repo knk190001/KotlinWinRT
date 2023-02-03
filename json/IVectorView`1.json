@@ -11,14 +11,19 @@
           "Type": {
             "Name": "UInt32",
             "Namespace": "System",
-            "GenericParameters": null
-          }
+            "GenericParameters": null,
+            "IsArray": false,
+            "IsReference": false
+          },
+          "ParameterType": "In"
         }
       ],
       "ReturnType": {
         "Name": "T",
         "Namespace": "",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     },
     {
@@ -27,7 +32,9 @@
       "ReturnType": {
         "Name": "UInt32",
         "Namespace": "System",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     },
     {
@@ -38,22 +45,30 @@
           "Type": {
             "Name": "T",
             "Namespace": "",
-            "GenericParameters": null
-          }
+            "GenericParameters": null,
+            "IsArray": false,
+            "IsReference": false
+          },
+          "ParameterType": "In"
         },
         {
           "Name": "index",
           "Type": {
-            "Name": "UInt32&",
+            "Name": "UInt32",
             "Namespace": "System",
-            "GenericParameters": null
-          }
+            "GenericParameters": null,
+            "IsArray": false,
+            "IsReference": true
+          },
+          "ParameterType": "Out"
         }
       ],
       "ReturnType": {
         "Name": "Boolean",
         "Namespace": "System",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     },
     {
@@ -64,22 +79,30 @@
           "Type": {
             "Name": "UInt32",
             "Namespace": "System",
-            "GenericParameters": null
-          }
+            "GenericParameters": null,
+            "IsArray": false,
+            "IsReference": false
+          },
+          "ParameterType": "In"
         },
         {
           "Name": "items",
           "Type": {
-            "Name": "T[]",
+            "Name": "T",
             "Namespace": "",
-            "GenericParameters": null
-          }
+            "GenericParameters": null,
+            "IsArray": true,
+            "IsReference": false
+          },
+          "ParameterType": "Out"
         }
       ],
       "ReturnType": {
         "Name": "UInt32",
         "Namespace": "System",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     }
   ],

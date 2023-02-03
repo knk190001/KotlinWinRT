@@ -27,5 +27,13 @@ data class SparseInterface(
     override fun withName(newName: String): SparseInterface {
         return copy(name = newName)
     }
+
+    fun asTypeReference(): SparseTypeReference {
+        return SparseTypeReference(
+            name,
+            namespace,
+            genericParameters
+        )
+    }
 }
 

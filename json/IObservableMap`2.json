@@ -18,7 +18,9 @@
                 "Type": {
                   "Name": "K",
                   "Namespace": "",
-                  "GenericParameters": null
+                  "GenericParameters": null,
+                  "IsArray": false,
+                  "IsReference": false
                 }
               },
               {
@@ -27,17 +29,24 @@
                 "Type": {
                   "Name": "V",
                   "Namespace": "",
-                  "GenericParameters": null
+                  "GenericParameters": null,
+                  "IsArray": false,
+                  "IsReference": false
                 }
               }
-            ]
-          }
+            ],
+            "IsArray": false,
+            "IsReference": false
+          },
+          "ParameterType": "In"
         }
       ],
       "ReturnType": {
         "Name": "EventRegistrationToken",
         "Namespace": "Windows.Foundation",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     },
     {
@@ -48,14 +57,19 @@
           "Type": {
             "Name": "EventRegistrationToken",
             "Namespace": "Windows.Foundation",
-            "GenericParameters": null
-          }
+            "GenericParameters": null,
+            "IsArray": false,
+            "IsReference": false
+          },
+          "ParameterType": "In"
         }
       ],
       "ReturnType": {
         "Name": "Void",
         "Namespace": "System",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     }
   ],

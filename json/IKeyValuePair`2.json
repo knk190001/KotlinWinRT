@@ -9,7 +9,9 @@
       "ReturnType": {
         "Name": "K",
         "Namespace": "",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     },
     {
@@ -18,7 +20,9 @@
       "ReturnType": {
         "Name": "V",
         "Namespace": "",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     }
   ],

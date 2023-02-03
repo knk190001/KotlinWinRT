@@ -8,7 +8,9 @@
       "Type": {
         "Name": "Int64",
         "Namespace": "System",
-        "GenericParameters": null
+        "GenericParameters": null,
+        "IsArray": false,
+        "IsReference": false
       }
     }
   ],

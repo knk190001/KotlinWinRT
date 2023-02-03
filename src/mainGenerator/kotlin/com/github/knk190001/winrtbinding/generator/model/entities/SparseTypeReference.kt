@@ -8,7 +8,11 @@ data class SparseTypeReference(
     @Json("Namespace")
     val namespace: String,
     @Json("GenericParameters")
-    val genericParameters: List<SparseGenericParameter>?
+    val genericParameters: List<SparseGenericParameter>?,
+    @Json("IsArray")
+    val isArray: Boolean = false,
+    @Json("IsReference")
+    val isReference: Boolean = false
 ) {
     fun projectType(typeVariable: String, newTypeReference: SparseTypeReference): SparseTypeReference {
         if (name == typeVariable) {
@@ -20,13 +24,8 @@ data class SparseTypeReference(
     }
 
     fun normalize(): SparseTypeReference {
-        return if (this.name.endsWith("&")) {
-            copy(name = name.dropLast(1))
-        } else if (this.name.contains("_")) {
-            copy(name = "${name.replaceAfter('_', "").dropLast(1)}`${genericParameters!!.count()}")
-        } else {
-            this
-        }
+        if (!this.name.contains("_")) return this
+        return copy(name = "${name.replaceAfter('_', "").dropLast(1)}`${genericParameters!!.count()}")
     }
 
     override operator fun equals(other: Any?): Boolean {
