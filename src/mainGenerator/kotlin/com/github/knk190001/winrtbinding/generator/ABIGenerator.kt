@@ -28,10 +28,10 @@ import kotlin.io.path.forEachDirectoryEntry
 import kotlin.io.path.inputStream
 import kotlin.reflect.KClass
 
-typealias  LookUpProjectable = (SparseTypeReference) -> DirectProjectable<*>
+typealias  LookUpProjectable = (SparseTypeReference) -> IDirectProjectable<*>
 typealias  LookUp = (SparseTypeReference) -> SparseEntity
 
-typealias ProjectInterface = (DirectProjectable<*>, List<SparseGenericParameter>) -> Unit
+typealias ProjectInterface = (IDirectProjectable<*>, List<SparseGenericParameter>) -> Unit
 
 @Generator
 class ABIGenerator2 : KotlinCodeGenerator {
@@ -53,9 +53,9 @@ class ABIGenerator2 : KotlinCodeGenerator {
             }
         }
 
-        val projections = mutableListOf<Pair<DirectProjectable<*>, Collection<SparseGenericParameter>>>()
-        val projectInterface: (DirectProjectable<*>, Collection<SparseGenericParameter>) -> Unit =
-            { projectable: DirectProjectable<*>, genericParameters: Collection<SparseGenericParameter> ->
+        val projections = mutableListOf<Pair<IDirectProjectable<*>, Collection<SparseGenericParameter>>>()
+        val projectInterface: (IDirectProjectable<*>, Collection<SparseGenericParameter>) -> Unit =
+            { projectable: IDirectProjectable<*>, genericParameters: Collection<SparseGenericParameter> ->
                 if (projections.none {
                         isProjectionEquivalent(it, projectable to genericParameters)
                     }) {
@@ -86,8 +86,8 @@ class ABIGenerator2 : KotlinCodeGenerator {
     }
 
     private fun isProjectionEquivalent(
-        a: Pair<DirectProjectable<*>, Collection<SparseGenericParameter>>,
-        b: Pair<DirectProjectable<*>, Collection<SparseGenericParameter>>
+        a: Pair<IDirectProjectable<*>, Collection<SparseGenericParameter>>,
+        b: Pair<IDirectProjectable<*>, Collection<SparseGenericParameter>>
     ): Boolean {
         return a.first.namespace == b.first.namespace &&
                 a.first.name == b.first.name &&
@@ -95,11 +95,11 @@ class ABIGenerator2 : KotlinCodeGenerator {
     }
 
     private fun generateProjectedTypes(
-        projections: List<Pair<DirectProjectable<*>, Collection<SparseGenericParameter>>>,
+        projections: List<Pair<IDirectProjectable<*>, Collection<SparseGenericParameter>>>,
         lookUpTypeReference: LookUp,
-        checkIfExists: (DirectProjectable<*>, List<SparseGenericParameter>) -> Boolean
+        checkIfExists: (IDirectProjectable<*>, List<SparseGenericParameter>) -> Boolean
     ): List<FileSpec> {
-        val secondaryProjections = mutableListOf<Pair<DirectProjectable<*>, List<SparseGenericParameter>>>()
+        val secondaryProjections = mutableListOf<Pair<IDirectProjectable<*>, List<SparseGenericParameter>>>()
         return projections.filter {
 
             it.second.none { gParam ->
@@ -107,11 +107,11 @@ class ABIGenerator2 : KotlinCodeGenerator {
             }
         }.map {
             val (sInterface, genericParameters) = it
-            val suffix = getProjectedName(genericParameters)
-            val newName = "${sInterface.name.substring(0, sInterface.name.length - 2)}$suffix"
+//            val suffix = getProjectedName(genericParameters)
+//            val newName = "${sInterface.name.substring(0, sInterface.name.length - 2)}$suffix"
             val projectedInterface = genericParameters.fold(sInterface) { acc, sparseGenericParameter ->
                 acc.projectType(sparseGenericParameter.name, sparseGenericParameter.type!!)
-            }.withName(newName)
+            }.withProjectedName()
 
             val projectInterface: ProjectInterface =
                 { secondaryProjectionInterface, parameters ->
@@ -147,8 +147,8 @@ class ABIGenerator2 : KotlinCodeGenerator {
         }
     }
 
-    private fun List<Pair<DirectProjectable<*>, List<SparseGenericParameter>>>.containsProjection(
-        projectable: DirectProjectable<*>,
+    private fun List<Pair<IDirectProjectable<*>, List<SparseGenericParameter>>>.containsProjection(
+        projectable: IDirectProjectable<*>,
         params: List<SparseGenericParameter>
     ): Boolean {
         return this.any {
@@ -162,7 +162,7 @@ class ABIGenerator2 : KotlinCodeGenerator {
     private fun generateClass(
         sparseClass: SparseClass,
         lookUp: LookUp,
-        projectInterface: (DirectProjectable<*>, Collection<SparseGenericParameter>) -> Unit
+        projectInterface: (IDirectProjectable<*>, Collection<SparseGenericParameter>) -> Unit
     ): FileSpec {
 
         val fileSpec = FileSpec.builder(sparseClass.namespace, sparseClass.name)
@@ -213,10 +213,11 @@ class ABIGenerator2 : KotlinCodeGenerator {
             if (it.genericParameters == null) {
                 it
             } else {
-                it.copy(name = "${it.name.replaceAfter('`',"").dropLast(1)}${getProjectedName(it.genericParameters)}")
+                it.withProjectedName()
             }
         }.map {
-            FunSpec.builder("as${it.name}").apply {
+            val name = "as${it.name}"
+            FunSpec.builder(name).apply {
                 addModifiers(KModifier.PRIVATE)
                 val cb = CodeBlock.builder().apply {
                     if (it.genericParameters != null) {
@@ -249,7 +250,7 @@ class ABIGenerator2 : KotlinCodeGenerator {
             if (it.genericParameters == null) {
                 it
             } else {
-                it.copy(name = "${it.name.dropLast(2)}${getProjectedName(it.genericParameters)}")
+                it.copy(name = it.getProjectedName())
             }
         }.map {
             PropertySpec.builder("${it.name}_Interface", ClassName(it.namespace, it.name)).apply {
@@ -449,7 +450,7 @@ class ABIGenerator2 : KotlinCodeGenerator {
     private fun generateMethodsForClassFromInterface(
         typeReference: SparseTypeReference,
         lookUpTypeReference: LookUp,
-        projectInterface: (DirectProjectable<*>, Collection<SparseGenericParameter>) -> Unit,
+        projectInterface: (IDirectProjectable<*>, Collection<SparseGenericParameter>) -> Unit,
     ): Collection<FunSpec> {
         val sInterface = lookUpTypeReference(typeReference) as SparseInterface
         return sInterface.methods.filter(::isMethodValid).map { method ->
@@ -465,30 +466,23 @@ class ABIGenerator2 : KotlinCodeGenerator {
                     addParameter(it.name, it.type.asClassName())
                     if (it.type.genericParameters != null) {
                         projectInterface(
-                            lookUpTypeReference(it.type) as DirectProjectable<*>,
+                            lookUpTypeReference(it.type) as IDirectProjectable<*>,
                             it.type.genericParameters
                         )
                     }
                 }
                 if (m.returnType.genericParameters != null) {
                     projectInterface(
-                        lookUpTypeReference(method.returnType) as DirectProjectable<*>,
+                        lookUpTypeReference(method.returnType) as IDirectProjectable<*>,
                         typeReference.genericParameters!!
                     )
                 }
                 println("${sInterface.namespace}.${sInterface.name}")
                 returns(m.returnType.asClassName())
-                val name = if (typeReference.genericParameters != null) {
-                    val parameters = getProjectedName(typeReference.genericParameters)
-                    "${sInterface.name.dropLast(2)}$parameters"
-                } else {
-                    sInterface.name
-                }
+                val name = typeReference.getProjectedName()
                 val cb = CodeBlock.builder().apply {
                     add("return ${name}_Interface.${m.name}(")
-                    m.parameters.forEach {
-                        add("${it.name}, ")
-                    }
+                    add(m.parameters.joinToString { it.name })
                     add(")")
                 }.build()
 
@@ -510,21 +504,18 @@ fun SparseTypeReference.asClassName(): ClassName {
             "UInt32&" -> UINTByReference::class.asClassName()
             "Object" -> ClassName("com.sun.jna.platform.win32.COM", "Unknown")
             "Int64" -> Long::class.asClassName()
-//            "Object" -> Unknown::class.asClassName()
             else -> throw NotImplementedError("Type: $namespace.$name is not handled")
         }
     }
     if (this.isReference) {
         if (genericParameters != null) {
-            val suffix = getProjectedName(genericParameters)
-            val name = "${this.name.replaceAfter('`',"").dropLast(1)}$suffix"
+            val name = getProjectedName()
             return ClassName("${this.namespace}.$name", "ByReference")
         }
         return ClassName("${this.namespace}.${name}", "ByReference")
     }
     if (genericParameters != null) {
-        val suffix = getProjectedName(genericParameters)
-        val name = "${this.name.substring(0, this.name.length - 2)}$suffix"
+        val name = getProjectedName()
         return ClassName(this.namespace, name)
     }
     return ClassName(this.namespace, this.name)
@@ -548,20 +539,21 @@ fun SparseTypeReference.asKClass(): KClass<*> {
     return Nothing::class
 }
 
-private fun getProjectedName(parameter: SparseGenericParameter): String {
-    if (parameter.type!!.genericParameters == null) return parameter.type.name
-    val nameWithoutIllegalSymbol = parameter.type.name.substring(0, parameter.type.name.length - 2)
-    return "$nameWithoutIllegalSymbol${getProjectedName(parameter.type.genericParameters!!)}";
-}
+//private fun getProjectedName(parameter: SparseGenericParameter): String {
+//    if (parameter.type!!.genericParameters == null) return parameter.type.name
+//    val nameWithoutIllegalSymbol = parameter.type.name.substring(0, parameter.type.name.length - 2)
+//    return "$nameWithoutIllegalSymbol${getProjectedName(parameter.type.genericParameters!!)}";
+//}
 
 private val separator = "_"
 
-private fun getProjectedName(parameters: Collection<SparseGenericParameter>): String {
-    val suffix = parameters.fold(separator) { acc, sparseGenericParameter ->
-        "$acc${getProjectedName(sparseGenericParameter)}$separator"
-    }
-    return suffix
-}
+//fun getProjectedName(parameters: Collection<SparseGenericParameter>): String {
+//    val suffix = parameters.fold(separator) { acc, sparseGenericParameter ->
+//        "$acc${getProjectedName(sparseGenericParameter)}$separator"
+//    }
+//    return suffix
+//}
+
 
 fun SparseTypeReference.byReferenceClassName(): ClassName {
     if (namespace == "System") {
@@ -577,8 +569,7 @@ fun SparseTypeReference.byReferenceClassName(): ClassName {
         }
     }
     if (genericParameters != null) {
-        val suffix = getProjectedName(genericParameters)
-        val name = "${this.name.substring(0, this.name.length - 2)}$suffix"
+        val name = getProjectedName()
         return ClassName("${this.namespace}.$name", "ByReference")
     }
 

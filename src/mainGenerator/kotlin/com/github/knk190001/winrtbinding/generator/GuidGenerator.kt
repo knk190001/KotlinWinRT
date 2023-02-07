@@ -1,10 +1,8 @@
 package com.github.knk190001.winrtbinding.generator
 
 import com.github.knk190001.winrtbinding.generator.model.entities.*
-import com.sun.jna.platform.win32.Guid
 import com.sun.jna.platform.win32.Guid.GUID
 import memeid.UUID
-import java.nio.charset.StandardCharsets
 
 
 object GuidGenerator {
@@ -74,7 +72,7 @@ object GuidGenerator {
             }
         } else {
             val entity = lookup(typeReference)
-            if (entity is DirectProjectable<*> && typeReference.genericParameters != null) {
+            if (entity is IDirectProjectable<*> && typeReference.genericParameters != null) {
                 val typeParameters =
                     typeReference.genericParameters.map { it.type }
                         .joinToString(";") { getSignature2(it!!, lookup) }

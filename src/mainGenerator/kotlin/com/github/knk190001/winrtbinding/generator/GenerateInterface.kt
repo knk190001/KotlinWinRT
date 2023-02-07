@@ -8,7 +8,6 @@ import com.sun.jna.Pointer
 import com.sun.jna.PointerType
 import com.sun.jna.platform.win32.Guid
 import com.sun.jna.platform.win32.WinNT.HRESULT
-import com.sun.jna.ptr.ByReference
 import com.sun.jna.Function as JNAFunction
 
 fun generateInterface(
@@ -37,25 +36,6 @@ private fun TypeSpec.Builder.addByReferenceType(sparseInterface: SparseInterface
     addType(spec)
 }
 
-private fun TypeSpec.Builder.generateByReferenceType(sparseInterface: SparseInterface) {
-    val className = ClassName("", sparseInterface.name)
-
-    superclass(ByReference::class)
-    val ptrSize = Native::class.member("POINTER_SIZE")
-    addSuperclassConstructorParameter("%M", ptrSize)
-
-    val getValueSpec = FunSpec.builder("getValue").apply {
-        addCode("return %T(pointer.getPointer(0))", className)
-        returns(className)
-    }.build()
-    addFunction(getValueSpec)
-
-    val setValueSpec = FunSpec.builder("setValue").apply {
-        addParameter("value", className)
-        addCode("pointer.setPointer(0, value.pointer)")
-    }.build()
-    addFunction(setValueSpec)
-}
 
 
 private fun TypeSpec.Builder.addABI(sparseInterface: SparseInterface, lookUp: LookUp) {
@@ -185,7 +165,7 @@ private fun projectMethodTypes(
 
 private fun projectType(typeReference: SparseTypeReference, lookUp: LookUp, projectInterface: ProjectInterface) {
     if (typeReference.genericParameters != null) {
-        projectInterface(lookUp(typeReference) as DirectProjectable<*>, typeReference.genericParameters)
+        projectInterface(lookUp(typeReference) as IDirectProjectable<*>, typeReference.genericParameters)
     }
 }
 

@@ -13,10 +13,10 @@ data class SparseInterface(
     @Json("Methods")
     val methods: List<SparseMethod>,
     @Json("GenericParameters")
-    val genericParameters: List<SparseGenericParameter>?,
+    override val genericParameters: List<SparseGenericParameter>?,
     @Json("Traits")
     val traits: List<Trait>
-): SparseEntity("Interface"), DirectProjectable<SparseInterface>{
+): SparseEntity("Interface"), IDirectProjectable<SparseInterface>{
     override fun projectType(typeVariable: String, newTypeReference: SparseTypeReference): SparseInterface {
         return this.copy(
             methods = methods.map { it.projectType(typeVariable, newTypeReference) },
@@ -28,7 +28,11 @@ data class SparseInterface(
         return copy(name = newName)
     }
 
-    fun asTypeReference(): SparseTypeReference {
+    override fun withProjectedName(): SparseInterface {
+        return withName(asTypeReference().getProjectedName())
+    }
+
+    override fun asTypeReference(): SparseTypeReference {
         return SparseTypeReference(
             name,
             namespace,

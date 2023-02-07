@@ -1,6 +1,6 @@
 package com.github.knk190001.winrtbinding.generator
 
-import com.github.knk190001.winrtbinding.generator.model.entities.DirectProjectable
+import com.github.knk190001.winrtbinding.generator.model.entities.IDirectProjectable
 import com.github.knk190001.winrtbinding.generator.model.entities.SparseDelegate
 import com.github.knk190001.winrtbinding.generator.model.entities.SparseGenericParameter
 import com.squareup.kotlinpoet.*
@@ -15,7 +15,7 @@ import com.sun.jna.win32.StdCallLibrary.StdCallCallback
 fun generateDelegate(
     sd: SparseDelegate,
     lookUpTypeReference: LookUp,
-    projectType: (DirectProjectable<*>, List<SparseGenericParameter>) -> Unit
+    projectType: (IDirectProjectable<*>, List<SparseGenericParameter>) -> Unit
 ) = FileSpec.builder(sd.namespace, sd.name).apply {
     addImport("com.github.knk190001.winrtbinding.interfaces", "getValue")
 
@@ -176,15 +176,15 @@ private fun TypeSpec.Builder.generateNativeInterface(sd: SparseDelegate) {
 private fun generateProjections(
     sd: SparseDelegate,
     lookUpTypeReference: LookUp,
-    projectType: (DirectProjectable<*>, List<SparseGenericParameter>) -> Unit
+    projectType: (IDirectProjectable<*>, List<SparseGenericParameter>) -> Unit
 ) {
     sd.parameters.forEach {
         if (it.type.genericParameters != null) {
-            projectType(lookUpTypeReference(it.type) as DirectProjectable<*>, it.type.genericParameters)
+            projectType(lookUpTypeReference(it.type) as IDirectProjectable<*>, it.type.genericParameters)
         }
     }
     if (sd.returnType.genericParameters != null) {
-        projectType(lookUpTypeReference(sd.returnType) as DirectProjectable<*>, sd.returnType.genericParameters)
+        projectType(lookUpTypeReference(sd.returnType) as IDirectProjectable<*>, sd.returnType.genericParameters)
     }
 }
 

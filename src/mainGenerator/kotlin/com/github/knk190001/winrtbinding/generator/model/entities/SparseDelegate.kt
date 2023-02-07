@@ -14,8 +14,8 @@ data class SparseDelegate(
     @Json("ReturnType")
     val returnType: SparseTypeReference,
     @Json("GenericParameters")
-    val genericParameters: List<SparseGenericParameter>? = null
-) : SparseEntity("Delegate"), DirectProjectable<SparseDelegate> {
+    override val genericParameters: List<SparseGenericParameter>? = null
+) : SparseEntity("Delegate"), IDirectProjectable<SparseDelegate> {
     override fun projectType(typeVariable: String, newTypeReference: SparseTypeReference): SparseDelegate {
         if (genericParameters == null) return this
         return copy(
@@ -28,4 +28,17 @@ data class SparseDelegate(
     override fun withName(newName: String): SparseDelegate {
         return copy(name = newName)
     }
+
+    override fun withProjectedName(): SparseDelegate {
+        return withName(asTypeReference().getProjectedName())
+    }
+
+    override fun asTypeReference(): SparseTypeReference {
+        return SparseTypeReference(
+            name,
+            namespace,
+            genericParameters
+        )
+    }
+
 }

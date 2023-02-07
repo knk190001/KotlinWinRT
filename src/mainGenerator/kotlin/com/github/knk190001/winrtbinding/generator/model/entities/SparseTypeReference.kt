@@ -28,6 +28,30 @@ data class SparseTypeReference(
         return copy(name = "${name.replaceAfter('_', "").dropLast(1)}`${genericParameters!!.count()}")
     }
 
+    private fun hasActualizedGenericParameter(): Boolean {
+        if (genericParameters == null) return false
+        return genericParameters.none {
+            it.type == null
+        }
+    }
+    private val separator = "_"
+
+    fun getProjectedName(): String {
+        if (!hasActualizedGenericParameter()) return name
+        val nameWithoutBackTick = name.replaceAfterLast('`',"").dropLast(1)
+        val pName = genericParameters!!.map {
+            it.type!!.getProjectedName()
+        }.fold(nameWithoutBackTick + separator) { acc, parameterName ->
+            "$acc${parameterName}$separator"
+        }
+
+        return pName
+    }//
+
+    fun withProjectedName(): SparseTypeReference {
+        return copy(name = getProjectedName())
+    }
+
     override operator fun equals(other: Any?): Boolean {
         if (other !is INamedEntity) {
             return false
