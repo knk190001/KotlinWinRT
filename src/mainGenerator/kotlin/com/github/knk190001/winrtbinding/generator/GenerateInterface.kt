@@ -83,7 +83,7 @@ private fun TypeSpec.Builder.addMethods(
             FunSpec.builder(method.name).apply {
                 method.parameters.forEach { addParameter(it.name, it.type.asClassName()) }
                 addInterfaceMethodBody(method, index)
-                if (!method.returnType.isVoid()) returns(method.returnType.asClassName())
+                if (!method.returnType.isVoid()) returns(method.returnType.asClassName(false))
             }.build()
         }.forEach(this::addFunction)
 }

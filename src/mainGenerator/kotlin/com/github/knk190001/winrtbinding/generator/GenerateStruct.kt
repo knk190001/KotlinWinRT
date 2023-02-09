@@ -39,7 +39,7 @@ fun generateStruct(sparseStruct: SparseStruct) = FileSpec.builder(sparseStruct.n
 
         val byReference = TypeSpec.classBuilder("ByReference").apply {
             superclass(ClassName(sparseStruct.namespace,sparseStruct.name))
-            addSuperinterface(Structure.ByValue::class)
+            addSuperinterface(Structure.ByReference::class)
 
             val getValueFn = FunSpec.builder("getValue").apply {
                 addCode("return this")
@@ -47,8 +47,14 @@ fun generateStruct(sparseStruct: SparseStruct) = FileSpec.builder(sparseStruct.n
             }.build()
             addFunction(getValueFn)
         }.build()
-        addType(byReference)
 
+        val byValue = TypeSpec.classBuilder("ByValue").apply {
+            superclass(ClassName(sparseStruct.namespace,sparseStruct.name))
+            addSuperinterface(Structure.ByValue::class)
+        }.build()
+
+        addType(byReference)
+        addType(byValue)
         primaryConstructor(constructor)
         addSuperclassConstructorParameter("ptr")
     }.build()

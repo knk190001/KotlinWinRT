@@ -17,6 +17,8 @@ typealias  LookUp = (SparseTypeReference) -> SparseEntity
 
 typealias ProjectInterface = (IDirectProjectable<*>, List<SparseGenericParameter>) -> Unit
 
+lateinit var lookUpTypeReference:LookUp
+
 @Generator
 class ABIGenerator : KotlinCodeGenerator {
     override fun generateKotlin(): Collection<FileSpec> {
@@ -36,6 +38,7 @@ class ABIGenerator : KotlinCodeGenerator {
                 tr.equals(it)
             }
         }
+        lookUpTypeReference = lookUp
 
         val projections = mutableListOf<Pair<IDirectProjectable<*>, Collection<SparseGenericParameter>>>()
         val projectInterface: (IDirectProjectable<*>, Collection<SparseGenericParameter>) -> Unit =
@@ -85,7 +88,6 @@ class ABIGenerator : KotlinCodeGenerator {
     ): List<FileSpec> {
         val secondaryProjections = mutableListOf<Pair<IDirectProjectable<*>, List<SparseGenericParameter>>>()
         return projections.filter {
-
             it.second.none { gParam ->
                 gParam.type == null
             }

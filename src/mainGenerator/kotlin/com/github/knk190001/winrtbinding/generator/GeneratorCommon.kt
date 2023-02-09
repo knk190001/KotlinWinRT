@@ -1,6 +1,7 @@
 package com.github.knk190001.winrtbinding.generator
 
 import com.github.knk190001.winrtbinding.generator.model.entities.INamedEntity
+import com.github.knk190001.winrtbinding.generator.model.entities.SparseStruct
 import com.github.knk190001.winrtbinding.generator.model.entities.SparseTypeReference
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FunSpec
@@ -36,6 +37,7 @@ internal fun TypeSpec.Builder.generateByReferenceType(entity: INamedEntity) {
     }.build()
     addFunction(setValueSpec)
 }
+
 internal fun TypeSpec.Builder.addByReferenceType(entity: INamedEntity) {
     val byReference = TypeSpec.classBuilder("ByReference").apply {
         generateByReferenceType(entity)
@@ -43,7 +45,7 @@ internal fun TypeSpec.Builder.addByReferenceType(entity: INamedEntity) {
     addType(byReference)
 }
 
-fun SparseTypeReference.asClassName(): ClassName {
+fun SparseTypeReference.asClassName(structByValue:Boolean = true): ClassName {
     if (namespace == "System") {
         return when (name) {
             "UInt32" -> WinDef.UINT::class.asClassName()
@@ -61,13 +63,17 @@ fun SparseTypeReference.asClassName(): ClassName {
     if (this.isReference) {
         if (genericParameters != null) {
             val name = getProjectedName()
-            return ClassName("${this.namespace}.$name", "ByReference")
+            return ClassName(fullName(), "ByReference")
         }
-        return ClassName("${this.namespace}.${name}", "ByReference")
+        return ClassName(fullName(), "ByReference")
     }
     if (genericParameters != null) {
         val name = getProjectedName()
         return ClassName(this.namespace, name)
+    }
+
+    if (lookUpTypeReference(this) is SparseStruct && structByValue) {
+        return ClassName(namespace, name).nestedClass("ByValue")
     }
     return ClassName(this.namespace, this.name)
 }
@@ -109,3 +115,4 @@ fun SparseTypeReference.byReferenceClassName(): ClassName {
 
     return ClassName(this.namespace + ".${this.name}", "ByReference")
 }
+
