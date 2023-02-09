@@ -8,7 +8,7 @@ data class SparseTypeReference(
     @Json("Namespace")
     val namespace: String,
     @Json("GenericParameters")
-    val genericParameters: List<SparseGenericParameter>?,
+    val genericParameters: List<SparseGenericParameter>? = null,
     @Json("IsArray")
     val isArray: Boolean = false,
     @Json("IsReference")
@@ -28,12 +28,14 @@ data class SparseTypeReference(
         return copy(name = "${name.replaceAfter('_', "").dropLast(1)}`${genericParameters!!.count()}")
     }
 
-    private fun hasActualizedGenericParameter(): Boolean {
+    fun hasActualizedGenericParameter(): Boolean {
         if (genericParameters == null) return false
         return genericParameters.none {
             it.type == null
         }
     }
+
+    fun hasGenericParameter() = genericParameters != null
     private val separator = "_"
 
     fun getProjectedName(): String {
@@ -46,7 +48,9 @@ data class SparseTypeReference(
         }
 
         return pName
-    }//
+    }
+
+    fun fullName() = "$namespace.$name"
 
     fun withProjectedName(): SparseTypeReference {
         return copy(name = getProjectedName())

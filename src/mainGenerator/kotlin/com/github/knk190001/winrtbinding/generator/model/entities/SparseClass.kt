@@ -1,8 +1,7 @@
 package com.github.knk190001.winrtbinding.generator.model.entities
 
 import com.beust.klaxon.Json
-import com.github.knk190001.winrtbinding.generator.model.traits.DefaultInterfaceTrait
-import com.github.knk190001.winrtbinding.generator.model.traits.Trait
+import com.github.knk190001.winrtbinding.generator.model.traits.*
 
 data class SparseClass(
     @Json("Name")
@@ -18,4 +17,15 @@ data class SparseClass(
     val defaultInterface by lazy {
         (traits.single { it.traitType == "DefaultInterface" } as DefaultInterfaceTrait).defaultInterface
     }
+
+    val isDirectlyActivatable = traits.filterIsInstance<DirectActivationTrait>().any()
+
+    val staticInterfaces by lazy {
+        traits.filterIsInstance<StaticTrait>().flatMap {
+            it.interfaces
+        }.map { SparseTypeReference(it.name, it.namespace) }
+    }
+
+    val hasStaticInterfaces
+        get() = staticInterfaces.isNotEmpty()
 }

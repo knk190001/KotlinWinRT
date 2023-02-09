@@ -34,7 +34,6 @@ interface JNAApiInterface : StdCallLibrary {
 
 fun main() {
     testV2()
-
 }
 
 fun testV2() {
