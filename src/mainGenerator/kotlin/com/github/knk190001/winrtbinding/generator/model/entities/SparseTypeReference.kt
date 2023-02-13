@@ -16,7 +16,7 @@ data class SparseTypeReference(
 ) {
     fun projectType(typeVariable: String, newTypeReference: SparseTypeReference): SparseTypeReference {
         if (name == typeVariable) {
-            return newTypeReference
+            return newTypeReference.copy(isArray = isArray, isReference = isReference)
         }
         return copy(genericParameters = genericParameters?.map {
             it.projectType(typeVariable, newTypeReference)

@@ -3,11 +3,9 @@ package com.github.knk190001.winrtbinding.generator
 import com.github.knk190001.winrtbinding.generator.model.entities.INamedEntity
 import com.github.knk190001.winrtbinding.generator.model.entities.SparseStruct
 import com.github.knk190001.winrtbinding.generator.model.entities.SparseTypeReference
-import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.MemberName.Companion.member
-import com.squareup.kotlinpoet.TypeSpec
-import com.squareup.kotlinpoet.asClassName
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.sun.jna.Native
 import com.sun.jna.platform.win32.COM.Unknown
 import com.sun.jna.platform.win32.WinDef
@@ -45,7 +43,17 @@ internal fun TypeSpec.Builder.addByReferenceType(entity: INamedEntity) {
     addType(byReference)
 }
 
-fun SparseTypeReference.asClassName(structByValue:Boolean = true): ClassName {
+fun SparseTypeReference.asClassName(structByValue: Boolean = true): TypeName {
+    if (isArray) {
+        val baseClass = if (isReference) {
+            ClassName("com.github.knk190001.winrtbinding", "OutArray")
+        } else {
+            Array::class.asClassName()
+        }
+        return baseClass
+            .parameterizedBy(copy(isArray = false, isReference = false).asClassName())
+    }
+
     if (namespace == "System") {
         return when (name) {
             "UInt32" -> WinDef.UINT::class.asClassName()
@@ -63,7 +71,7 @@ fun SparseTypeReference.asClassName(structByValue:Boolean = true): ClassName {
     if (this.isReference) {
         if (genericParameters != null) {
             val name = getProjectedName()
-            return ClassName(fullName(), "ByReference")
+            return ClassName(name, "ByReference")
         }
         return ClassName(fullName(), "ByReference")
     }
@@ -79,6 +87,7 @@ fun SparseTypeReference.asClassName(structByValue:Boolean = true): ClassName {
 }
 
 fun SparseTypeReference.asKClass(): KClass<*> {
+    if (isArray) return Nothing::class
     if (namespace == "System") {
         return when (name) {
             "UInt32" -> WinDef.UINT::class
@@ -95,7 +104,12 @@ fun SparseTypeReference.asKClass(): KClass<*> {
     return Nothing::class
 }
 
-fun SparseTypeReference.byReferenceClassName(): ClassName {
+fun SparseTypeReference.byReferenceClassName(): TypeName {
+    if (isArray) {
+        return ClassName("com.github.knk190001.winrtbinding", "OutArray")
+            .parameterizedBy(copy(isReference = false, isArray = false).asClassName())
+
+    }
     if (namespace == "System") {
         return when (name) {
             "UInt32" -> WinDef.UINTByReference::class.asClassName()

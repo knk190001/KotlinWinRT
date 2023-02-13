@@ -202,7 +202,7 @@ private fun TypeSpec.Builder.generateClassMethods(sparseClass: SparseClass, look
         .mapFirst { it as SparseInterface }
         .mapPairFirst(::propagateTypeParameters)
         .flatMapFirst { it.methods }
-        .filterFirst(::isMethodValid)
+//        .filterFirst(::isMethodValid)
         .forEachPaired(::generateClassMethod)
 }
 
@@ -224,7 +224,7 @@ private fun TypeSpec.Builder.generateClassMethod(sparseMethod: SparseMethod, typ
         sparseMethod.parameters.forEach {
             addParameter(it.name, it.type.asClassName())
         }
-        returns(sparseMethod.returnType.asClassName())
+        returns(sparseMethod.returnType.asClassName(false))
         val name = typeReference.getProjectedName()
         val cb = CodeBlock.builder().apply {
             add("return ${name}_Interface.${sparseMethod.name}(")

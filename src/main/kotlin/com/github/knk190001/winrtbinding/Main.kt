@@ -1,5 +1,6 @@
 package com.github.knk190001.winrtbinding
 
+import Windows.Data.Json.IJsonValue
 import Windows.Data.Json.JsonArray
 import Windows.Data.Json.JsonObject
 import Windows.Data.Json.JsonValue
@@ -16,21 +17,6 @@ import com.sun.jna.ptr.PointerByReference
 import com.sun.jna.win32.StdCallLibrary
 
 
-interface JNAApiInterface : StdCallLibrary {
-    fun RoActivateInstance(filter: HANDLE, pref: PointerByReference): HRESULT
-    fun RoGetActivationFactory(activatableClassId: HANDLE, iid: REFIID, factory: PointerByReference): HRESULT
-    fun RoInitialize(initType: Int): HRESULT
-    fun RoGetParameterizedTypeInstanceIID(nameElementCount: UINT, nameElements: Pointer, metadataLocator: Pointer?, iid: Guid.GUID.ByReference, pExtra: Pointer?): HRESULT
-    fun WindowsCreateString(sourceString: WString, length: Int, string: HANDLEByReference): HRESULT
-    fun WindowsGetStringRawBuffer(str: HANDLE, length: IntByReference): WString
-
-    companion object {
-        val INSTANCE = Native.load(
-            "combase",
-            JNAApiInterface::class.java
-        ) as JNAApiInterface
-    }
-}
 
 fun main() {
     testV2()
@@ -46,6 +32,18 @@ fun testV2() {
     println(jsonArray.Stringify())
 
     jsonArray.Append(jsonValue.IJsonValue_Interface)
+
+
+
+    val values = (0..10).map {
+        JsonValue.CreateNumberValue(it.toDouble())
+    }
+    values.forEach {
+        jsonArray.Append(it.IJsonValue_Interface)
+    }
+    val items = arrayOf(IJsonValue())
+    jsonArray.GetMany(UINT(0), items)
+    println(items[0].Stringify())
     println(jsonArray.Stringify())
 
     jsonObject.SetNamedValue("array", jsonArray.IJsonValue_Interface)
@@ -58,21 +56,4 @@ fun testV2() {
 
 fun HRESULT.print(functionName: String) {
     println("$functionName: ${Integer.toHexString(this.toInt())}")
-}
-fun checkHR(hr: HRESULT) {
-    if (hr.toInt() != 0) {
-        throw Win32Exception(hr)
-    }
-}
-fun String.toHandle():HANDLE {
-    val wString = WString(this)
-    val handleByReference = HANDLEByReference()
-    val hr = JNAApiInterface.INSTANCE.WindowsCreateString(wString, this.length, handleByReference)
-    return handleByReference.value
-}
-
-fun HANDLE.handleToString():String {
-    val ibr = IntByReference()
-    val wstr = JNAApiInterface.INSTANCE.WindowsGetStringRawBuffer(this,ibr)
-    return wstr.toString()
 }

@@ -76,11 +76,11 @@ private fun TypeSpec.Builder.addMethods(
     projectInterface: ProjectInterface
 ) {
     sparseInterface.methods
-        .filter(::isMethodValid)
+//        .filter(::isMethodValid)
         .mapIndexed { index, method ->
             projectMethodTypes(method, lookUp, projectInterface)
 
-            FunSpec.builder(method.name).apply {
+            FunSpec.builder(method.name).apply {//
                 method.parameters.forEach { addParameter(it.name, it.type.asClassName()) }
                 addInterfaceMethodBody(method, index)
                 if (!method.returnType.isVoid()) returns(method.returnType.asClassName(false))
@@ -111,7 +111,7 @@ private fun CodeBlock.Builder.generateInterfaceMethodBody(method: SparseMethod, 
         addStatement("val result = %T()", method.returnType.byReferenceClassName())
     }
 
-    add("val hr = %T(fn.invokeInt(arrayOf(pointer, ", HRESULT::class)
+    add("val hr = fn.invokeHR(arrayOf(pointer, ")
     add(marshalledNames.joinToString())
 
     if (method.parameters.isNotEmpty()) {
@@ -119,9 +119,9 @@ private fun CodeBlock.Builder.generateInterfaceMethodBody(method: SparseMethod, 
     }
 
     if (!method.returnType.isVoid()) {
-        add("result")
+        add(" result")
     }
-    add(")))\n")
+    add("))\n")
 
     beginControlFlow("if (hr.toInt() != 0) {")
     addStatement("throw %T(hr.toString())", RuntimeException::class.asClassName())
@@ -147,7 +147,10 @@ private fun CodeBlock.Builder.marshalParameters(method: SparseMethod): List<Stri
             .getOrDefault(it.type.asKClass(), Marshaller.default)
             .generateToNativeMarshalCode(it.name)
         add(marshalCode)
-        newName
+
+        if (it.type.isArray) {
+            "$newName.size, $newName"
+        }else newName
     }
 }
 
@@ -194,6 +197,7 @@ private fun TypeSpec.Builder.addVtblPtrProperty() {
 private fun FileSpec.Builder.addImports() {
     addImport("com.github.knk190001.winrtbinding", "handleToString")
     addImport("com.github.knk190001.winrtbinding", "toHandle")
+    addImport("com.github.knk190001.winrtbinding", "invokeHR")
     addImport("com.github.knk190001.winrtbinding.interfaces", "getValue")
 }
 
