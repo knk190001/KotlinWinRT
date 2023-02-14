@@ -4,6 +4,7 @@ import Windows.Data.Json.IJsonValue
 import Windows.Data.Json.JsonArray
 import Windows.Data.Json.JsonObject
 import Windows.Data.Json.JsonValue
+import Windows.Data.Text.SelectableWordSegmentsTokenizingHandler
 import Windows.Data.Text.SelectableWordsSegmenter
 import com.sun.jna.Native
 import com.sun.jna.Pointer
@@ -54,6 +55,13 @@ fun testV2() {
 
     val selectableWordsSegmenter = SelectableWordsSegmenter("en-US")
     println(selectableWordsSegmenter.get_ResolvedLanguage())
+
+    val tokenizingHandler = SelectableWordSegmentsTokenizingHandler.create { precedingWords, words ->
+        println("It works?")
+    }
+
+    selectableWordsSegmenter.Tokenize("Hello World!", UINT(0),tokenizingHandler)
+
 }
 
 fun HRESULT.print(functionName: String) {

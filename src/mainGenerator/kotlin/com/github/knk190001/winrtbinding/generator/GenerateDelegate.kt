@@ -5,9 +5,11 @@ import com.github.knk190001.winrtbinding.generator.model.entities.SparseDelegate
 import com.github.knk190001.winrtbinding.generator.model.entities.SparseGenericParameter
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.sun.jna.Memory
 import com.sun.jna.Native
 import com.sun.jna.Pointer
 import com.sun.jna.platform.win32.Guid
+import com.sun.jna.platform.win32.Guid.GUID
 import com.sun.jna.platform.win32.WinNT.HRESULT
 import com.sun.jna.ptr.ByReference
 import com.sun.jna.win32.StdCallLibrary.StdCallCallback
@@ -47,11 +49,11 @@ fun generateDelegate(
 fun TypeSpec.Builder.generateInvokeFunction(sd: SparseDelegate) {
     val invokeFn = FunSpec.builder("invoke").apply {
         sd.parameters.forEach {
-            addParameter(it.name,it.type.asClassName())
+            addParameter(it.name, it.type.asClassName())
         }
         val cb = CodeBlock.builder().apply {
             if (sd.returnType.name != "Void") {
-                addStatement("val result = %T()",sd.returnType.byReferenceClassName())
+                addStatement("val result = %T()", sd.returnType.byReferenceClassName())
             }
             val marshalledParameters = sd.parameters.map {
                 Marshaller.marshals.getOrDefault(it.type.asKClass(), Marshaller.default)
@@ -142,8 +144,13 @@ private fun TypeSpec.Builder.generateCompanion(
                 addStatement("%T(0)", HRESULT::class)
 
                 endControlFlow()
-                addStatement("val newDelegate = %T()", delegateTypeName)
-                addStatement("newDelegate.init(emptyList(), nativeFn)")
+                addStatement("val newDelegate = %T(%T(12))", delegateTypeName,Memory::class)
+                val iidType = if (sd.parameterized) {
+                    "PIID"
+                } else {
+                    "IID"
+                }
+                addStatement("newDelegate.init(listOf(ABI.$iidType), nativeFn)", Guid.IID::class, sd.guid)
                 addStatement("return newDelegate")
             }.build()
             addCode(cb)
@@ -212,8 +219,18 @@ private fun TypeSpec.Builder.generateByReference(sd: SparseDelegate) {
 private fun TypeSpec.Builder.generateABI(sd: SparseDelegate) {
     val abiObject = TypeSpec.objectBuilder("ABI").apply {
         val iidProperty = PropertySpec.builder("IID", Guid.IID::class).apply {
-            initializer("%T(%S)", Guid.IID::class,sd.guid)
+            initializer("%T(%S)", Guid.IID::class, sd.guid)
         }.build()
+        if (sd.parameterized) {
+            val piidProperty = PropertySpec.builder("PIID", Guid.IID::class).apply {
+                val piid = GuidGenerator.CreateIID(sd.asTypeReference(), lookUpTypeReference)!!.toGuidString()
+                    .filter { it.isLetterOrDigit() }
+                    .lowercase()
+
+                initializer("%T(%S)",Guid.IID::class.java, piid)
+            }.build()
+            addProperty(piidProperty)
+        }
         addProperty(iidProperty)
     }.build()
     addType(abiObject)

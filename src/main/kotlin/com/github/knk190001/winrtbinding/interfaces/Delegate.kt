@@ -22,8 +22,10 @@ open class Delegate<T : StdCallCallback>(ptr: Pointer? = Memory(12)) : PointerTy
     }
 
     fun init(uuids: List<GUID>, fn: T) {
-        val vtbl = DelegateVtbl<T>(Pointer.NULL)
-        pointer.setPointer(0, vtbl.pointer)
+        val memory = Memory(Native.getNativeSize(DelegateVtbl.ByValue::class.java).toLong())
+        val vtbl = DelegateVtbl<T>(memory)
+
+        pointer.setPointer(0, memory)
         pointer.setInt(Native.POINTER_SIZE.toLong(), 1)
         vtbl.fn = fn
         val unknown = vtbl.iUnknownVtbl
@@ -50,12 +52,14 @@ open class Delegate<T : StdCallCallback>(ptr: Pointer? = Memory(12)) : PointerTy
             pointer.setInt(8, refCount - 1)
             return@Release HRESULT(0)
         }
+        vtbl.write()
     }
 
-    @FieldOrder("iUnknown", "fn")
-    class DelegateVtbl<T : StdCallCallback>(ptr: Pointer?) : Structure(ptr) {
+    @FieldOrder("iUnknownVtbl", "fn")
+    open class DelegateVtbl<T : StdCallCallback>(ptr: Pointer?) : Structure(ptr) {
+        class ByValue<T: StdCallCallback>(ptr: Pointer?) : DelegateVtbl<T>(ptr), Structure.ByValue
+        class ByReference<T: StdCallCallback>(ptr: Pointer?) : DelegateVtbl<T>(ptr), Structure.ByReference
         init {
-            read()
             autoRead = true
             autoWrite = true
         }
