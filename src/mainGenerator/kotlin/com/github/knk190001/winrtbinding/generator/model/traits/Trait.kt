@@ -15,6 +15,7 @@ class TraitAdapter : TypeAdapter<Trait> {
     override fun classFor(type: Any): KClass<out Trait> {
         return when (type as String) {
             "DirectActivation" -> DirectActivationTrait::class
+            "FactoryActivation" -> FactoryActivationTrait::class
             "Static" -> StaticTrait::class
             "ValueType" -> ValueTypeTrait::class
             "DefaultInterface" -> DefaultInterfaceTrait::class

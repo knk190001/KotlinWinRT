@@ -18,7 +18,12 @@ data class SparseClass(
         (traits.single { it.traitType == "DefaultInterface" } as DefaultInterfaceTrait).defaultInterface
     }
 
+    val hasFactoryActivator = traits.filterIsInstance<FactoryActivationTrait>().any()
+
     val isDirectlyActivatable = traits.filterIsInstance<DirectActivationTrait>().any()
+
+    val hasStaticInterfaces
+        get() = staticInterfaces.isNotEmpty()
 
     val staticInterfaces by lazy {
         traits.filterIsInstance<StaticTrait>().flatMap {
@@ -26,6 +31,9 @@ data class SparseClass(
         }.map { SparseTypeReference(it.name, it.namespace) }
     }
 
-    val hasStaticInterfaces
-        get() = staticInterfaces.isNotEmpty()
+    val factoryActivatorType by lazy {
+        traits.filterIsInstance<FactoryActivationTrait>()
+            .single()
+            .factoryType
+    }
 }

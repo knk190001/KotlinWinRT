@@ -34,6 +34,7 @@ class ABIGenerator : KotlinCodeGenerator {
 
         val lookUp: LookUp = { typeReference ->
             val tr = typeReference.normalize()
+            println(typeReference.fullName())
             entities.first {
                 tr.equals(it)
             }

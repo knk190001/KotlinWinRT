@@ -65,6 +65,7 @@ fun SparseTypeReference.asClassName(structByValue: Boolean = true): TypeName {
             "UInt32&" -> WinDef.UINTByReference::class.asClassName()
             "Object" -> ClassName("com.sun.jna.platform.win32.COM", "Unknown")
             "Int64" -> Long::class.asClassName()
+            "Char" -> Char::class.asClassName()
             else -> throw NotImplementedError("Type: $namespace.$name is not handled")
         }
     }
@@ -98,6 +99,7 @@ fun SparseTypeReference.asKClass(): KClass<*> {
             "String" -> String::class
             "UInt32&" -> WinDef.UINTByReference::class
             "Object" -> Unknown::class
+            "Char" -> Char::class
             else -> throw NotImplementedError("Type: $namespace.$name is not handled")
         }
     }

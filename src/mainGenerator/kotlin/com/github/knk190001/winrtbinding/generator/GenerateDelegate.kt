@@ -195,7 +195,8 @@ private fun TypeSpec.Builder.generateByReference(sd: SparseDelegate) {
         val memberName = MemberName(Native::class.asClassName(), "POINTER_SIZE")
         addSuperclassConstructorParameter("%M", memberName)
         val getValueSpec = FunSpec.builder("getValue").apply {
-            addCode("%T(pointer.getPointer(0))", delegateTypeName)
+            addCode("return %T(pointer.getPointer(0))", delegateTypeName)
+            returns(delegateTypeName)
         }.build()
         addFunction(getValueSpec)
 

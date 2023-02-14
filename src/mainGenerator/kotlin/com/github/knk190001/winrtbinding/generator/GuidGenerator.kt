@@ -1,5 +1,6 @@
 package com.github.knk190001.winrtbinding.generator
 
+import com.github.knk190001.winrtbinding.generator.GuidGenerator.isValueType
 import com.github.knk190001.winrtbinding.generator.model.entities.*
 import com.sun.jna.platform.win32.Guid.GUID
 import memeid.UUID
@@ -113,7 +114,14 @@ object GuidGenerator {
     private fun SparseTypeReference.isValueType(
         lookup: LookUp
     ): Boolean {
+        if (isPrimitive()) {
+            return true
+        }
         val declaration = lookup(this)
+        return declaration is SparseEnum || declaration is SparseStruct
+    }
+
+    private fun SparseTypeReference.isPrimitive():Boolean {
         return this.isSystemType("Boolean") ||
                 this.isSystemType("Byte") ||
                 this.isSystemType("Char") ||
@@ -125,9 +133,7 @@ object GuidGenerator {
                 this.isSystemType("Single") ||
                 this.isSystemType("UInt16") ||
                 this.isSystemType("UInt32") ||
-                this.isSystemType("UInt64") ||
-                declaration is SparseEnum ||
-                declaration is SparseStruct
+                this.isSystemType("UInt64")
     }
 
     private fun String.guidToSignatureFormat(): String {

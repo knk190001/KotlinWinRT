@@ -4,6 +4,7 @@ import Windows.Data.Json.IJsonValue
 import Windows.Data.Json.JsonArray
 import Windows.Data.Json.JsonObject
 import Windows.Data.Json.JsonValue
+import Windows.Data.Text.SelectableWordsSegmenter
 import com.sun.jna.Native
 import com.sun.jna.Pointer
 import com.sun.jna.WString
@@ -33,8 +34,6 @@ fun testV2() {
 
     jsonArray.Append(jsonValue.IJsonValue_Interface)
 
-
-
     val values = (0..10).map {
         JsonValue.CreateNumberValue(it.toDouble())
     }
@@ -52,6 +51,9 @@ fun testV2() {
 
     println(jsonValue.get_ValueType())
     println(jsonValue2.get_ValueType())
+
+    val selectableWordsSegmenter = SelectableWordsSegmenter("en-US")
+    println(selectableWordsSegmenter.get_ResolvedLanguage())
 }
 
 fun HRESULT.print(functionName: String) {

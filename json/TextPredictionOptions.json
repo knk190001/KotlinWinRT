@@ -1,0 +1,18 @@
+{
+  "Name": "TextPredictionOptions",
+  "Namespace": "Windows.Data.Text",
+  "Values": {
+    "None": 0,
+    "Predictions": 1,
+    "Corrections": 2
+  },
+  "Traits": [
+    {
+      "TraitType": "ValueType"
+    },
+    {
+      "TraitType": "FlagEnum"
+    }
+  ],
+  "Type": "Enum"
+}
