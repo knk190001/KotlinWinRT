@@ -1,18 +1,18 @@
+package com.github.knk190001.winrtbinding.interfaces
+
 import com.sun.jna.Callback
 import com.sun.jna.Pointer
 import com.sun.jna.Structure
 import com.sun.jna.Structure.FieldOrder
-import com.sun.jna.platform.win32.WinDef.UINTByReference
-import com.sun.jna.platform.win32.WinNT.HANDLE
 import com.sun.jna.platform.win32.WinNT.HANDLEByReference
 import com.sun.jna.platform.win32.WinNT.HRESULT
 import com.sun.jna.ptr.IntByReference
 import com.sun.jna.ptr.PointerByReference
 
-@FieldOrder("iUnknown", "getIids", "getRuntimeClassName", "getTrustLevel")
+@FieldOrder("iUnknownVtbl", "getIids", "getRuntimeClassName", "getTrustLevel")
 class IInspectable(ptr: Pointer? = Pointer.NULL) : Structure(ptr) {
     @JvmField
-    var iUnknown: IUnknown? = null
+    var iUnknownVtbl: IUnknownVtbl? = null
     @JvmField
     var getIids: GetIids? = null
     @JvmField
