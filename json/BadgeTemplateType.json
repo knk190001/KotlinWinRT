@@ -1,0 +1,14 @@
+{
+  "Name": "BadgeTemplateType",
+  "Namespace": "Windows.UI.Notifications",
+  "Values": {
+    "BadgeGlyph": 0,
+    "BadgeNumber": 1
+  },
+  "Traits": [
+    {
+      "TraitType": "ValueType"
+    }
+  ],
+  "Type": "Enum"
+}

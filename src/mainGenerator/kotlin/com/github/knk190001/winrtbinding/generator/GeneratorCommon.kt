@@ -9,10 +9,14 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.sun.jna.Native
 import com.sun.jna.platform.win32.COM.Unknown
 import com.sun.jna.platform.win32.WinDef
+import com.sun.jna.platform.win32.WinDef.ULONG
+import com.sun.jna.platform.win32.WinDef.USHORT
+import com.sun.jna.platform.win32.WinDef.USHORTByReference
 import com.sun.jna.platform.win32.WinNT
 import com.sun.jna.ptr.ByReference
 import com.sun.jna.ptr.ByteByReference
 import com.sun.jna.ptr.DoubleByReference
+import com.sun.jna.ptr.FloatByReference
 import com.sun.jna.ptr.IntByReference
 import kotlin.reflect.KClass
 
@@ -65,7 +69,10 @@ fun SparseTypeReference.asClassName(structByValue: Boolean = true): TypeName {
             "UInt32&" -> WinDef.UINTByReference::class.asClassName()
             "Object" -> ClassName("com.sun.jna.platform.win32.COM", "Unknown")
             "Int64" -> Long::class.asClassName()
+            "UInt64" -> ULONG::class.asClassName()
             "Char" -> Char::class.asClassName()
+            "UInt16" -> USHORT::class.asClassName()
+            "Single" -> Float::class.asClassName()
             else -> throw NotImplementedError("Type: $namespace.$name is not handled")
         }
     }
@@ -92,13 +99,16 @@ fun SparseTypeReference.asKClass(): KClass<*> {
     if (namespace == "System") {
         return when (name) {
             "UInt32" -> WinDef.UINT::class
+            "UInt64" -> ULONG::class
             "Double" -> Double::class
             "Boolean" -> Boolean::class
             "Int32" -> Int::class
             "Void" -> Unit::class
             "String" -> String::class
             "UInt32&" -> WinDef.UINTByReference::class
+            "UInt16" -> USHORT::class
             "Object" -> Unknown::class
+            "Single" -> Float::class
             "Char" -> Char::class
             else -> throw NotImplementedError("Type: $namespace.$name is not handled")
         }
@@ -114,7 +124,10 @@ fun SparseTypeReference.byReferenceClassName(): TypeName {
     }
     if (namespace == "System") {
         return when (name) {
+            "UInt16" -> USHORTByReference::class.asClassName()
             "UInt32" -> WinDef.UINTByReference::class.asClassName()
+            "UInt64" -> WinDef.ULONGByReference::class.asClassName()
+            "Single" -> FloatByReference::class.asClassName()
             "Double" -> DoubleByReference::class.asClassName()
             "Boolean" -> ByteByReference::class.asClassName()
             "Int32" -> IntByReference::class.asClassName()

@@ -1,6 +1,7 @@
 plugins {
     kotlin("jvm") version "1.6.21"
     java
+    application
 }
 
 apply(plugin = "com.github.knk190001.gradle-code-generator-kotlin")
@@ -35,4 +36,8 @@ buildscript {
     dependencies {
         classpath("com.github.knk190001:GradleCodeGenerator:1.0.5")
     }
+}
+
+application {
+    mainClass.set("com.github.knk190001.winrtbinding.MainKt")
 }

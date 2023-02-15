@@ -1,0 +1,14 @@
+{
+  "Name": "UserWatcherUpdateKind",
+  "Namespace": "Windows.System",
+  "Values": {
+    "Properties": 0,
+    "Picture": 1
+  },
+  "Traits": [
+    {
+      "TraitType": "ValueType"
+    }
+  ],
+  "Type": "Enum"
+}

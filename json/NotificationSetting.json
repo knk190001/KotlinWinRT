@@ -1,0 +1,17 @@
+{
+  "Name": "NotificationSetting",
+  "Namespace": "Windows.UI.Notifications",
+  "Values": {
+    "Enabled": 0,
+    "DisabledForApplication": 1,
+    "DisabledForUser": 2,
+    "DisabledByGroupPolicy": 3,
+    "DisabledByManifest": 4
+  },
+  "Traits": [
+    {
+      "TraitType": "ValueType"
+    }
+  ],
+  "Type": "Enum"
+}

@@ -25,7 +25,7 @@ class ABIGenerator : KotlinCodeGenerator {
         val jsonObjects = mutableListOf<JsonObject>()
         Path("${System.getProperty("user.dir")}/json").forEachDirectoryEntry {
             jsonObjects.add(Parser.default().parse(it.inputStream()) as JsonObject)
-        }
+        }//
 
         val entities = jsonObjects.map {
             println(it["Name"])
@@ -58,7 +58,7 @@ class ABIGenerator : KotlinCodeGenerator {
             it is SparseDelegate && it.genericParameters == null || it !is SparseDelegate
         }.map {
             when (it) {
-                is SparseClass -> generateClass2(it, lookUp, projectInterface)
+                is SparseClass -> generateClass(it, lookUp, projectInterface)
                 is SparseInterface -> generateInterface(it, lookUp, projectInterface)
                 is SparseEnum -> generateEnum(it)
                 is SparseStruct -> generateStruct(it)

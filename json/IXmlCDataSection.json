@@ -1,0 +1,9 @@
+{
+  "Name": "IXmlCDataSection",
+  "Namespace": "Windows.Data.Xml.Dom",
+  "Guid": "4d04b46fc8bd45b488990400d7c2c60f",
+  "Methods": [],
+  "Traits": [],
+  "GenericParameters": null,
+  "Type": "Interface"
+}

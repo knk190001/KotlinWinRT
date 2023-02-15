@@ -1,0 +1,18 @@
+{
+  "Name": "ThumbnailMode",
+  "Namespace": "Windows.Storage.FileProperties",
+  "Values": {
+    "PicturesView": 0,
+    "VideosView": 1,
+    "MusicView": 2,
+    "DocumentsView": 3,
+    "ListView": 4,
+    "SingleItem": 5
+  },
+  "Traits": [
+    {
+      "TraitType": "ValueType"
+    }
+  ],
+  "Type": "Enum"
+}

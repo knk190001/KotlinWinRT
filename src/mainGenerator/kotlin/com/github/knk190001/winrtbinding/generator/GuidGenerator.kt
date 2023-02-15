@@ -129,6 +129,7 @@ object GuidGenerator {
                 this.isSystemType("Guid") ||
                 this.isSystemType("Int16") ||
                 this.isSystemType("Int32") ||
+                this.isSystemType("Int64") ||
                 this.isSystemType("SByte") ||
                 this.isSystemType("Single") ||
                 this.isSystemType("UInt16") ||

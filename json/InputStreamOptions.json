@@ -1,0 +1,18 @@
+{
+  "Name": "InputStreamOptions",
+  "Namespace": "Windows.Storage.Streams",
+  "Values": {
+    "None": 0,
+    "Partial": 1,
+    "ReadAhead": 2
+  },
+  "Traits": [
+    {
+      "TraitType": "ValueType"
+    },
+    {
+      "TraitType": "FlagEnum"
+    }
+  ],
+  "Type": "Enum"
+}

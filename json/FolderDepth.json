@@ -1,0 +1,14 @@
+{
+  "Name": "FolderDepth",
+  "Namespace": "Windows.Storage.Search",
+  "Values": {
+    "Shallow": 0,
+    "Deep": 1
+  },
+  "Traits": [
+    {
+      "TraitType": "ValueType"
+    }
+  ],
+  "Type": "Enum"
+}

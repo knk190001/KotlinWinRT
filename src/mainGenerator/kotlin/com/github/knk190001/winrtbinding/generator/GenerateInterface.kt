@@ -37,7 +37,6 @@ private fun TypeSpec.Builder.addByReferenceType(sparseInterface: SparseInterface
 }
 
 
-
 private fun TypeSpec.Builder.addABI(sparseInterface: SparseInterface, lookUp: LookUp) {
     val abiSpec = TypeSpec.objectBuilder("ABI").apply {
         if (sparseInterface.genericParameters != null && sparseInterface.genericParameters.any { it.type != null }) {
@@ -103,12 +102,19 @@ private fun CodeBlock.Builder.generateInterfaceMethodBody(method: SparseMethod, 
     val pointerSize = Native::class.member("POINTER_SIZE")
     val stdConvention = JNAFunction::class.member("ALT_CONVENTION")
     addStatement("val fnPtr = vtblPtr.getPointer(${index + 6}L * %M)", pointerSize)
-    addStatement("val fn = %T.getFunction(fnPtr, %M)", JNAFunction::class ,stdConvention)
+    addStatement("val fn = %T.getFunction(fnPtr, %M)", JNAFunction::class, stdConvention)
 
     val marshalledNames = marshalParameters(method)
 
     if (!method.returnType.isVoid()) {
-        addStatement("val result = %T()", method.returnType.byReferenceClassName())
+        if (method.returnType.isArray) {
+            addStatement(
+                "val result = makeOutArray<%T>()",
+                method.returnType.copy(isArray = false, isReference = false).asClassName()
+            )
+        } else {
+            addStatement("val result = %T()", method.returnType.byReferenceClassName())
+        }
     }
 
     add("val hr = fn.invokeHR(arrayOf(pointer, ")
@@ -132,7 +138,13 @@ private fun CodeBlock.Builder.generateInterfaceMethodBody(method: SparseMethod, 
     val returnMarshaller = Marshaller.marshals.getOrDefault(method.returnType.asKClass(), Marshaller.default)
     val (unmarshalledName, unmarshallingCode) = returnMarshaller.generateFromNativeMarshalCode("resultValue")
 
-    addStatement("val resultValue = result.getValue()")
+    if (method.returnType.isArray) {
+        addStatement("val resultValue = result.array")
+    }else {
+        addStatement("val resultValue = result.getValue()")
+    }
+
+
     add(unmarshallingCode)
     addStatement("return $unmarshalledName")
 }
@@ -150,7 +162,7 @@ private fun CodeBlock.Builder.marshalParameters(method: SparseMethod): List<Stri
 
         if (it.type.isArray) {
             "$newName.size, $newName"
-        }else newName
+        } else newName
     }
 }
 
@@ -197,6 +209,7 @@ private fun TypeSpec.Builder.addVtblPtrProperty() {
 private fun FileSpec.Builder.addImports() {
     addImport("com.github.knk190001.winrtbinding", "handleToString")
     addImport("com.github.knk190001.winrtbinding", "toHandle")
+    addImport("com.github.knk190001.winrtbinding", "makeOutArray")
     addImport("com.github.knk190001.winrtbinding", "invokeHR")
     addImport("com.github.knk190001.winrtbinding.interfaces", "getValue")
 }

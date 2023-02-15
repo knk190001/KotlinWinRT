@@ -1,0 +1,17 @@
+{
+  "Name": "PeriodicUpdateRecurrence",
+  "Namespace": "Windows.UI.Notifications",
+  "Values": {
+    "HalfHour": 0,
+    "Hour": 1,
+    "SixHours": 2,
+    "TwelveHours": 3,
+    "Daily": 4
+  },
+  "Traits": [
+    {
+      "TraitType": "ValueType"
+    }
+  ],
+  "Type": "Enum"
+}

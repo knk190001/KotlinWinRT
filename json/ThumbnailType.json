@@ -1,0 +1,14 @@
+{
+  "Name": "ThumbnailType",
+  "Namespace": "Windows.Storage.FileProperties",
+  "Values": {
+    "Image": 0,
+    "Icon": 1
+  },
+  "Traits": [
+    {
+      "TraitType": "ValueType"
+    }
+  ],
+  "Type": "Enum"
+}

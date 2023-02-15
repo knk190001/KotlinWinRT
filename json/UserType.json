@@ -1,0 +1,17 @@
+{
+  "Name": "UserType",
+  "Namespace": "Windows.System",
+  "Values": {
+    "LocalUser": 0,
+    "RemoteUser": 1,
+    "LocalGuest": 2,
+    "RemoteGuest": 3,
+    "SystemManaged": 4
+  },
+  "Traits": [
+    {
+      "TraitType": "ValueType"
+    }
+  ],
+  "Type": "Enum"
+}
