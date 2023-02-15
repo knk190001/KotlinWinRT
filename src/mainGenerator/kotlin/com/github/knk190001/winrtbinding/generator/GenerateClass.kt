@@ -285,15 +285,24 @@ private fun TypeSpec.Builder.generateClassTypeSpec(
 
 private fun TypeSpec.Builder.generateInterfacePointerProperties(sparseClass: SparseClass) {
     sparseClass.interfaces.map {
-        generateInterfacePointerProperty(sparseClass, it)
+        generateInterfacePointerProperty(it)
     }.forEach(::addProperty)
 }
 
-fun generateInterfacePointerProperty(sparseClass: SparseClass, sparseTypeReference: SparseTypeReference): PropertySpec {
-    return PropertySpec.builder("${sparseTypeReference.getProjectedName()}_Ptr", Pointer::class.asClassName().copy(true))
-        .initializer("${sparseTypeReference.getProjectedName()}_Interface.${sparseTypeReference.getProjectedName()}_Ptr")
-        .addModifiers(KModifier.OVERRIDE)
-        .build()
+fun generateInterfacePointerProperty(sparseTypeReference: SparseTypeReference): PropertySpec {
+    return PropertySpec.builder(
+        "${sparseTypeReference.getProjectedName()}_Ptr",
+        Pointer::class.asClassName().copy(true)
+    ).apply {
+        addModifiers(KModifier.OVERRIDE)
+        val delegateCb = CodeBlock.builder().apply {
+            beginControlFlow("lazy")
+            addStatement("${sparseTypeReference.getProjectedName()}_Interface.${sparseTypeReference.getProjectedName()}_Ptr")
+            endControlFlow()
+        }.build()
+        delegate(delegateCb)
+    }.build()
+
 }
 
 private fun TypeSpec.Builder.generateClassMethods(sparseClass: SparseClass, lookUp: LookUp) {
@@ -312,11 +321,6 @@ private fun propagateTypeParameters(pair: Pair<SparseInterface, SparseTypeRefere
         acc.projectType(genericParameter.name, genericParameter.type!!)
     }
 }
-
-private fun isMethodValid(method: SparseMethod): Boolean {
-    return method.parameters.none { it.type.isArray } && !method.returnType.isArray
-}
-
 
 private fun TypeSpec.Builder.generateClassMethod(sparseMethod: SparseMethod, typeReference: SparseTypeReference) {
     val fn = FunSpec.builder(sparseMethod.name).apply {

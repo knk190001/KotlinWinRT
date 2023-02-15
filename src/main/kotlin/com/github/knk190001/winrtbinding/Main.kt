@@ -34,9 +34,9 @@ fun testV2() {
         JsonValue.CreateNumberValue(it.toDouble())
     }
     values.forEach(jsonArray::Append)
-    val items:Array<IJsonValue?> = arrayOf(IJsonValue.ABI.makeIJsonValue(Pointer.NULL) as IJsonValue.IJsonValue_Impl) as Array<IJsonValue?>
+    val items:Array<IJsonValue?> = arrayOf(JsonValue.CreateNumberValue(10.0)) as Array<IJsonValue?>
     jsonArray.GetMany(UINT(0), items)
-//    println(items[0]!!.Stringify())
+    println(items[0]!!.Stringify())
     println(jsonArray.Stringify())
 
     jsonObject.SetNamedValue("array", jsonArray)
