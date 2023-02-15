@@ -12,23 +12,23 @@ class OutArray<T>(val clazz: Class<T>) : PointerByReference() {
         get() = value
 
     var initialized = false
-    lateinit var array: Array<T>
+    lateinit var array: Array<T?>
 
     val size
         get() = array.size
 
-    operator fun get(idx: Int): T {
+    operator fun get(idx: Int): T? {
         return array[idx]
     }
 
-    operator fun set(idx: Int, newValue: T) {
+    operator fun set(idx: Int, newValue: T?) {
         array[idx] = newValue
     }
 }
 
 inline fun <reified T> OutArray<T>.initialize(length: UINT) {
     @Suppress("UNCHECKED_CAST")
-    array = jvmNewArrayInstance(clazz, length.toInt()) as Array<T>
+    array = jvmNewArrayInstance(clazz, length.toInt()) as Array<T?>
     arrayPtr.getValue(0, array)
     initialized = true
 }

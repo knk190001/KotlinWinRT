@@ -19,6 +19,10 @@ fun generateClass(
     projectInterfaces(sparseClass, lookUp, projectInterface)
     val classTypeSpec = TypeSpec.classBuilder(sparseClass.name).apply {
         superclass(PointerType::class)
+        sparseClass.interfaces.forEach {
+            addSuperinterface(it.asClassName())
+        }
+
         generateClassTypeSpec(sparseClass, lookUp)
         addByReferenceType(sparseClass)
         generateClassABI(sparseClass)
@@ -138,7 +142,10 @@ private fun TypeSpec.Builder.generateFactoryActivator(sparseClass: SparseClass) 
                 sparseClass.fullName()
             )
             addStatement("checkHR(hr)")
-            addStatement("return %T(factoryActivatorPtr.value)", factoryClassName)
+            addStatement(
+                "return(%T.ABI.make${sparseClass.factoryActivatorType.name}(factoryActivatorPtr.value))",
+                factoryClassName
+            )
         }.build()
         addCode(cb)
         returns(factoryClassName)
@@ -169,7 +176,11 @@ fun TypeSpec.Builder.generateStaticInterface(staticInterface: SparseTypeReferenc
                 win32,
                 sparseClass.fullName()
             )
-            addStatement("return %T(interfacePtr.value)", ClassName(staticInterface.namespace, staticInterface.name))
+            addStatement(
+                "val result = %T.ABI.make${staticInterface.name}(interfacePtr.value)",
+                ClassName(staticInterface.namespace, staticInterface.name)
+            )
+            addStatement("return result")
         }.build()
 
         addCode(cb)
@@ -268,7 +279,21 @@ private fun TypeSpec.Builder.generateClassTypeSpec(
     generateConstructor(sparseClass)
     generateQueryInterfaceMethods(sparseClass)
     generateLazyInterfaceProperties(sparseClass)
+    generateInterfacePointerProperties(sparseClass)
     generateClassMethods(sparseClass, lookUp)
+}
+
+private fun TypeSpec.Builder.generateInterfacePointerProperties(sparseClass: SparseClass) {
+    sparseClass.interfaces.map {
+        generateInterfacePointerProperty(sparseClass, it)
+    }.forEach(::addProperty)
+}
+
+fun generateInterfacePointerProperty(sparseClass: SparseClass, sparseTypeReference: SparseTypeReference): PropertySpec {
+    return PropertySpec.builder("${sparseTypeReference.getProjectedName()}_Ptr", Pointer::class.asClassName().copy(true))
+        .initializer("${sparseTypeReference.getProjectedName()}_Interface.${sparseTypeReference.getProjectedName()}_Ptr")
+        .addModifiers(KModifier.OVERRIDE)
+        .build()
 }
 
 private fun TypeSpec.Builder.generateClassMethods(sparseClass: SparseClass, lookUp: LookUp) {
@@ -298,6 +323,7 @@ private fun TypeSpec.Builder.generateClassMethod(sparseMethod: SparseMethod, typ
         sparseMethod.parameters.forEach {
             addParameter(it.name, it.type.asClassName())
         }
+        addModifiers(KModifier.OVERRIDE)
         returns(sparseMethod.returnType.asClassName(false))
         val name = typeReference.getProjectedName()
         val cb = CodeBlock.builder().apply {
@@ -337,6 +363,12 @@ private fun generateQueryInterfaceMethod(typeReference: SparseTypeReference) =
     FunSpec.builder("as${typeReference.getProjectedName()}").apply {
         addModifiers(KModifier.PRIVATE)
         val cb = CodeBlock.builder().apply {
+            beginControlFlow("if(pointer == Pointer.NULL)")
+            addStatement(
+                "return(%T.ABI.make${typeReference.getProjectedName()}(Pointer.NULL))",
+                typeReference.asClassName()
+            )
+            endControlFlow()
             val iidStatement = if (typeReference.hasActualizedGenericParameter()) {
                 "val refiid = %T(%T.ABI.PIID)"
             } else {
@@ -347,7 +379,10 @@ private fun generateQueryInterfaceMethod(typeReference: SparseTypeReference) =
             addStatement("val ref = %T()", PointerByReference::class)
             val iUnkownVtblClass = ClassName("com.github.knk190001.winrtbinding.interfaces", "IUnknownVtbl")
             addStatement("%T(pointer.getPointer(0)).queryInterface(pointer, refiid, ref)", iUnkownVtblClass)
-            addStatement("return %T(ref.value)", typeReference.asClassName())
+            addStatement(
+                "return(%T.ABI.make${typeReference.getProjectedName()}(ref.value))",
+                typeReference.asClassName()
+            )
 
         }.build()
         addCode(cb)
