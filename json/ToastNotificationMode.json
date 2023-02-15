@@ -1,0 +1,15 @@
+{
+  "Name": "ToastNotificationMode",
+  "Namespace": "Windows.UI.Notifications",
+  "Values": {
+    "Unrestricted": 0,
+    "PriorityOnly": 1,
+    "AlarmsOnly": 2
+  },
+  "Traits": [
+    {
+      "TraitType": "ValueType"
+    }
+  ],
+  "Type": "Enum"
+}

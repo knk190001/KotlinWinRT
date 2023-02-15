@@ -1,0 +1,14 @@
+{
+  "Name": "NotificationMirroring",
+  "Namespace": "Windows.UI.Notifications",
+  "Values": {
+    "Allowed": 0,
+    "Disabled": 1
+  },
+  "Traits": [
+    {
+      "TraitType": "ValueType"
+    }
+  ],
+  "Type": "Enum"
+}

@@ -1,0 +1,15 @@
+{
+  "Name": "UserAgeConsentGroup",
+  "Namespace": "Windows.System",
+  "Values": {
+    "Child": 0,
+    "Minor": 1,
+    "Adult": 2
+  },
+  "Traits": [
+    {
+      "TraitType": "ValueType"
+    }
+  ],
+  "Type": "Enum"
+}

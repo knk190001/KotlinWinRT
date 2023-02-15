@@ -1,0 +1,16 @@
+{
+  "Name": "CreationCollisionOption",
+  "Namespace": "Windows.Storage",
+  "Values": {
+    "GenerateUniqueName": 0,
+    "ReplaceExisting": 1,
+    "FailIfExists": 2,
+    "OpenIfExists": 3
+  },
+  "Traits": [
+    {
+      "TraitType": "ValueType"
+    }
+  ],
+  "Type": "Enum"
+}

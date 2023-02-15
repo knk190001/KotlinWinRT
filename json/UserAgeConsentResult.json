@@ -1,0 +1,17 @@
+{
+  "Name": "UserAgeConsentResult",
+  "Namespace": "Windows.System",
+  "Values": {
+    "NotEnforced": 0,
+    "Included": 1,
+    "NotIncluded": 2,
+    "Unknown": 3,
+    "Ambiguous": 4
+  },
+  "Traits": [
+    {
+      "TraitType": "ValueType"
+    }
+  ],
+  "Type": "Enum"
+}

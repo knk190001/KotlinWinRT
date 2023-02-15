@@ -1,0 +1,21 @@
+{
+  "Name": "PhotoOrientation",
+  "Namespace": "Windows.Storage.FileProperties",
+  "Values": {
+    "Unspecified": 0,
+    "Normal": 1,
+    "FlipHorizontal": 2,
+    "Rotate180": 3,
+    "FlipVertical": 4,
+    "Transpose": 5,
+    "Rotate270": 6,
+    "Transverse": 7,
+    "Rotate90": 8
+  },
+  "Traits": [
+    {
+      "TraitType": "ValueType"
+    }
+  ],
+  "Type": "Enum"
+}

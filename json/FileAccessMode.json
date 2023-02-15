@@ -1,0 +1,14 @@
+{
+  "Name": "FileAccessMode",
+  "Namespace": "Windows.Storage",
+  "Values": {
+    "Read": 0,
+    "ReadWrite": 1
+  },
+  "Traits": [
+    {
+      "TraitType": "ValueType"
+    }
+  ],
+  "Type": "Enum"
+}

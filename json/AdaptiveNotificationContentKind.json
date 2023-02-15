@@ -1,0 +1,13 @@
+{
+  "Name": "AdaptiveNotificationContentKind",
+  "Namespace": "Windows.UI.Notifications",
+  "Values": {
+    "Text": 0
+  },
+  "Traits": [
+    {
+      "TraitType": "ValueType"
+    }
+  ],
+  "Type": "Enum"
+}

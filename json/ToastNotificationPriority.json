@@ -1,0 +1,14 @@
+{
+  "Name": "ToastNotificationPriority",
+  "Namespace": "Windows.UI.Notifications",
+  "Values": {
+    "Default": 0,
+    "High": 1
+  },
+  "Traits": [
+    {
+      "TraitType": "ValueType"
+    }
+  ],
+  "Type": "Enum"
+}

@@ -10,7 +10,7 @@ import com.sun.jna.PointerType
 import com.sun.jna.platform.win32.Guid.REFIID
 import com.sun.jna.ptr.PointerByReference
 
-fun generateClass2(
+fun generateClass(
     sparseClass: SparseClass,
     lookUp: LookUp,
     projectInterface: ProjectInterface
@@ -362,7 +362,7 @@ private fun TypeSpec.Builder.generateConstructor(sparseClass: SparseClass) {
             .defaultValue("Pointer.NULL")
             .build()
         addParameter(ptrParameterSpec)
-        addModifiers(KModifier.PRIVATE)
+//        addModifiers(KModifier.PRIVATE)
     }.build()
     primaryConstructor(constructorSpec)
     addSuperclassConstructorParameter("ptr")

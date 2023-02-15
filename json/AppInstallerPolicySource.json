@@ -1,0 +1,14 @@
+{
+  "Name": "AppInstallerPolicySource",
+  "Namespace": "Windows.ApplicationModel",
+  "Values": {
+    "Default": 0,
+    "System": 1
+  },
+  "Traits": [
+    {
+      "TraitType": "ValueType"
+    }
+  ],
+  "Type": "Enum"
+}
