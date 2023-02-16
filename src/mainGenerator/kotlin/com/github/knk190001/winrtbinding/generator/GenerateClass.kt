@@ -5,6 +5,7 @@ package com.github.knk190001.winrtbinding.generator
 import com.github.knk190001.winrtbinding.generator.model.entities.*
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.MemberName.Companion.member
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.sun.jna.Pointer
 import com.sun.jna.PointerType
 import com.sun.jna.platform.win32.Guid.REFIID
@@ -22,6 +23,7 @@ fun generateClass(
         sparseClass.interfaces.forEach {
             addSuperinterface(it.asClassName())
         }
+        addSuperinterface(ClassName("com.github.knk190001.winrtbinding.interfaces", "IWinRTObject"))
 
         generateClassTypeSpec(sparseClass, lookUp)
         addByReferenceType(sparseClass)
@@ -280,7 +282,31 @@ private fun TypeSpec.Builder.generateClassTypeSpec(
     generateQueryInterfaceMethods(sparseClass)
     generateLazyInterfaceProperties(sparseClass)
     generateInterfacePointerProperties(sparseClass)
-    generateClassMethods(sparseClass, lookUp)
+    generateInterfaceArray(sparseClass)
+    //generateClassMethods(sparseClass, lookUp)
+}
+
+private fun TypeSpec.Builder.generateInterfaceArray(sparseClass: SparseClass) {
+    //Add a property that has all the interfaces in an array
+    val iWinRTInterfaceClassName = ClassName("com.github.knk190001.winrtbinding.interfaces", "IWinRTInterface")
+    val interfaceArray = PropertySpec.builder(
+        "interfaces",
+        Array::class.asClassName().parameterizedBy(iWinRTInterfaceClassName),
+        KModifier.OVERRIDE
+    ).apply {
+        val getterSpec = FunSpec.getterBuilder().apply {
+            val cb = CodeBlock.builder().apply {
+                add("return arrayOf(")
+                add(sparseClass.interfaces.joinToString {
+                    "${it.getProjectedName()}_Interface"
+                })
+                add(")\n")
+            }.build()
+            addCode(cb)
+        }.build()
+        getter(getterSpec)
+    }.build()
+    addProperty(interfaceArray)
 }
 
 private fun TypeSpec.Builder.generateInterfacePointerProperties(sparseClass: SparseClass) {

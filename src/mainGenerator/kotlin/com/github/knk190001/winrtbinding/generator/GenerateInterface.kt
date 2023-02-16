@@ -3,6 +3,7 @@ package com.github.knk190001.winrtbinding.generator
 import com.github.knk190001.winrtbinding.generator.model.entities.*
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.MemberName.Companion.member
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.sun.jna.Native
 import com.sun.jna.NativeMapped
 import com.sun.jna.Pointer
@@ -20,19 +21,59 @@ fun generateInterface(
 
     val interfaceSpec = TypeSpec.interfaceBuilder(sparseInterface.name).apply {
         addSuperinterface(NativeMapped::class)
+        addSuperinterface(ClassName("com.github.knk190001.winrtbinding.interfaces", "IWinRTInterface"))
 
         addProperty("${sparseInterface.name}_Ptr", Pointer::class.asClassName().copy(true))
 
         addVtblPtrProperty(sparseInterface)
-//        addInterfaceMethods(sparseInterface)
         addMethods(sparseInterface, lookUp, projectInterface)
         addByReferenceType(sparseInterface)
         generateImplementation(sparseInterface, lookUp, projectInterface)
         addABI(sparseInterface, lookUp)
+        generateCompanion(sparseInterface)
     }.build()
     addType(interfaceSpec)
 
 }.build()
+
+private fun TypeSpec.Builder.generateCompanion(sparseInterface: SparseInterface) {
+    val companionSpec = TypeSpec.companionObjectBuilder().apply {
+        generateMakeArrayFunction(sparseInterface)
+        generateMakeArrayOfNullsFunction(sparseInterface)
+    }.build()
+    addType(companionSpec)
+}
+
+fun TypeSpec.Builder.generateMakeArrayOfNullsFunction(sparseInterface: SparseInterface) {
+    val makeArrayOfNullsSpec = FunSpec.builder("makeArrayOfNulls").apply {
+        addParameter("size", Int::class)
+        val returnType = Array::class.asClassName().parameterizedBy(ClassName("", sparseInterface.name).copy(true))
+        returns(returnType)
+        val cb = CodeBlock.builder().apply {
+            val implClassName = ClassName("", "${sparseInterface.name}_Impl")
+            addStatement("return arrayOfNulls<%T>(size) as %T", implClassName, returnType)
+        }.build()
+        addCode(cb)
+    }.build()
+    addFunction(makeArrayOfNullsSpec)
+}
+
+private fun TypeSpec.Builder.generateMakeArrayFunction(sparseInterface: SparseInterface) {
+    val makeArraySpec = FunSpec.builder("makeArray").apply {
+        addParameter("elements", ClassName("", sparseInterface.name), KModifier.VARARG)
+        returns(Array::class.asClassName().parameterizedBy(ClassName("", sparseInterface.name)))
+        val cb = CodeBlock.builder().apply {
+            val interfaceClassName = ClassName("", sparseInterface.name)
+            addStatement(
+                "return (elements as Array<%T>).castToImpl<%T,${sparseInterface.name}_Impl>()",
+                interfaceClassName,
+                interfaceClassName
+            )
+        }.build()
+        addCode(cb)
+    }.build()
+    addFunction(makeArraySpec)
+}
 
 private fun TypeSpec.Builder.generateImplementation(
     sparseInterface: SparseInterface,
@@ -52,10 +93,15 @@ private fun TypeSpec.Builder.generateImplementation(
 }
 
 private fun TypeSpec.Builder.addPointerProperty(sparseInterface: SparseInterface) {
-    val pointerPropertySpec = PropertySpec.builder("${sparseInterface.name}_Ptr", Pointer::class.asClassName().copy(true))
-        .initializer("pointer")
-        .addModifiers(KModifier.OVERRIDE)
+    val getter = FunSpec.getterBuilder()
+        .addCode("return pointer")
         .build()
+
+    val pointerPropertySpec =
+        PropertySpec.builder("${sparseInterface.name}_Ptr", Pointer::class.asClassName().copy(true))
+            .getter(getter)
+            .addModifiers(KModifier.OVERRIDE)
+            .build()
     addProperty(pointerPropertySpec)
 }
 
@@ -286,6 +332,7 @@ private fun FileSpec.Builder.addImports() {
     addImport("com.github.knk190001.winrtbinding", "toHandle")
     addImport("com.github.knk190001.winrtbinding", "makeOutArray")
     addImport("com.github.knk190001.winrtbinding", "invokeHR")
+    addImport("com.github.knk190001.winrtbinding", "castToImpl")
     addImport("com.github.knk190001.winrtbinding.interfaces", "getValue")
 }
 

@@ -1,5 +1,7 @@
 package com.github.knk190001.winrtbinding
 
+import com.github.knk190001.winrtbinding.interfaces.IWinRTInterface
+import com.github.knk190001.winrtbinding.interfaces.IWinRTObject
 import com.sun.jna.*
 import com.sun.jna.platform.win32.Guid
 import com.sun.jna.platform.win32.Win32Exception
@@ -19,9 +21,21 @@ val WinRT = JNAApiInterface.INSTANCE
 
 interface JNAApiInterface : StdCallLibrary {
     fun RoActivateInstance(filter: WinNT.HANDLE, pref: PointerByReference): WinNT.HRESULT
-    fun RoGetActivationFactory(activatableClassId: WinNT.HANDLE, iid: Guid.REFIID, factory: PointerByReference): WinNT.HRESULT
+    fun RoGetActivationFactory(
+        activatableClassId: WinNT.HANDLE,
+        iid: Guid.REFIID,
+        factory: PointerByReference
+    ): WinNT.HRESULT
+
     fun RoInitialize(initType: Int): WinNT.HRESULT
-    fun RoGetParameterizedTypeInstanceIID(nameElementCount: WinDef.UINT, nameElements: Pointer, metadataLocator: Pointer?, iid: Guid.GUID.ByReference, pExtra: Pointer?): WinNT.HRESULT
+    fun RoGetParameterizedTypeInstanceIID(
+        nameElementCount: WinDef.UINT,
+        nameElements: Pointer,
+        metadataLocator: Pointer?,
+        iid: Guid.GUID.ByReference,
+        pExtra: Pointer?
+    ): WinNT.HRESULT
+
     fun WindowsCreateString(sourceString: WString, length: Int, string: WinNT.HANDLEByReference): WinNT.HRESULT
     fun WindowsDeleteString(hstring: HANDLE?): Int
 
@@ -40,6 +54,7 @@ fun checkHR(hr: WinNT.HRESULT) {
         throw Win32Exception(hr)
     }
 }
+
 fun String.toHandle(): WinNT.HANDLE {
     val wString = WString(this)
     val handleByReference = WinNT.HANDLEByReference()
@@ -47,9 +62,9 @@ fun String.toHandle(): WinNT.HANDLE {
     return handleByReference.value
 }
 
-fun WinNT.HANDLE.handleToString():String {
+fun WinNT.HANDLE.handleToString(): String {
     val ibr = IntByReference()
-    val wstr = JNAApiInterface.INSTANCE.WindowsGetStringRawBuffer(this,ibr)
+    val wstr = JNAApiInterface.INSTANCE.WindowsGetStringRawBuffer(this, ibr)
     return wstr.toString()
 }
 
@@ -61,7 +76,7 @@ class WinRTTypeMapper : DefaultTypeMapper() {
             override fun toNative(value: Any, context: ToNativeContext): Any {
                 return if (value as Boolean) {
                     1
-                }else {
+                } else {
                     0
                 }.toByte()
             }
@@ -93,15 +108,37 @@ class WinRTTypeMapper : DefaultTypeMapper() {
 
         }
 
-        addTypeConverter(Boolean::class.javaPrimitiveType,booleanConverter)
-        addTypeConverter(String::class.java,stringConverter)
+        addTypeConverter(Boolean::class.javaPrimitiveType, booleanConverter)
+        addTypeConverter(String::class.java, stringConverter)
 
     }
 }
 
-private val winRTOptions = mapOf<String,Any?>(
+private val winRTOptions = mapOf<String, Any?>(
     Library.OPTION_TYPE_MAPPER to typeMapper
 )
-fun JnaFunction.invokeHR(params: Array<Any?>):HRESULT {
-    return this.invoke(HRESULT::class.java,params, winRTOptions) as HRESULT
+
+fun JnaFunction.invokeHR(params: Array<Any?>): HRESULT {
+    return this.invoke(HRESULT::class.java, params, winRTOptions) as HRESULT
+}
+
+inline fun <A : IWinRTInterface, reified T : A> Array<A>.interfaceOfType(): T {
+    //Loop through the array and return the first interface that matches the type
+    this.forEach {
+        if (it is T) {
+            return it
+        }
+    }
+    throw IllegalArgumentException("No interface of type ${T::class.java.name} found in the array")
+}
+
+inline fun <reified T : IWinRTInterface, reified R : T> Array<T>.castToImpl(): Array<T> {
+    @Suppress("UNCHECKED_CAST")
+    return this.map {
+        if (it is IWinRTObject) {
+            it.interfaces.interfaceOfType() as R
+        } else {
+            it as R
+        }
+    }.toTypedArray() as Array<T>
 }
