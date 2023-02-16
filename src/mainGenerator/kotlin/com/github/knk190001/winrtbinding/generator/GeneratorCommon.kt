@@ -47,7 +47,7 @@ internal fun TypeSpec.Builder.addByReferenceType(entity: INamedEntity) {
     addType(byReference)
 }
 
-fun SparseTypeReference.asClassName(structByValue: Boolean = true): TypeName {
+fun SparseTypeReference.asClassName(structByValue: Boolean = true, nullable: Boolean = false): TypeName {
     if (isArray) {
         val baseClass = if (isReference) {
             ClassName("com.github.knk190001.winrtbinding", "OutArray")
@@ -55,9 +55,11 @@ fun SparseTypeReference.asClassName(structByValue: Boolean = true): TypeName {
             Array::class.asClassName()
         }
         return baseClass
-            .parameterizedBy(copy(isArray = false, isReference = false).asClassName())
+            .parameterizedBy(copy(isArray = false, isReference = false).asClassName(nullable = true))
     }
-
+    if (nullable) {
+        return asClassName(isReference).copy(true)
+    }
     if (namespace == "System") {
         return when (name) {
             "UInt32" -> WinDef.UINT::class.asClassName()

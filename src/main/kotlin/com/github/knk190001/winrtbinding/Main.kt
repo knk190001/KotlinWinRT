@@ -1,5 +1,6 @@
 package com.github.knk190001.winrtbinding
 
+import Windows.ApplicationModel.AppInfo
 import Windows.Data.Json.IJsonValue
 import Windows.Data.Json.JsonArray
 import Windows.Data.Json.JsonObject
@@ -10,6 +11,7 @@ import Windows.Data.Xml.Dom.XmlDocument
 import Windows.UI.Notifications.ToastNotification
 import Windows.UI.Notifications.ToastNotificationManager
 import Windows.UI.Notifications.ToastNotificationManagerForUser
+import com.sun.jna.Pointer
 import com.sun.jna.platform.win32.WinDef.UINT
 import com.sun.jna.platform.win32.WinNT.*
 
@@ -27,21 +29,24 @@ fun testV2() {
     println(jsonObject.Stringify())
     println(jsonArray.Stringify())
 
-    jsonArray.Append(jsonValue.IJsonValue_Interface)
+    jsonArray.Append(jsonValue)
 
     val values = (0..10).map {
         JsonValue.CreateNumberValue(it.toDouble())
     }
-    values.forEach {
-        jsonArray.Append(it.IJsonValue_Interface)
-    }
-    val items = arrayOf(IJsonValue())
+    values.forEach(jsonArray::Append)
+    val items: Array<IJsonValue?> = IJsonValue.makeArrayOfNulls(2)
     jsonArray.GetMany(UINT(0), items)
-    println(items[0].Stringify())
+    println(items[0]!!.Stringify())
+    println(items[1]!!.Stringify())
     println(jsonArray.Stringify())
 
-    jsonObject.SetNamedValue("array", jsonArray.IJsonValue_Interface)
-    jsonObject.SetNamedValue("nullProperty", jsonValue2.IJsonValue_Interface)
+    val items2 = IJsonValue.makeArray(items[0]!!, items[1]!!)
+    jsonArray.ReplaceAll(items2 as Array<IJsonValue?>)
+    jsonArray.Stringify()
+
+    jsonObject.SetNamedValue("array", jsonArray)
+    jsonObject.SetNamedValue("nullProperty", jsonValue2)
     println(jsonObject.Stringify())
 
     println(jsonValue.get_ValueType())
@@ -81,10 +86,7 @@ fun testV2() {
     xmlDoc.LoadXml(xmlToastTemplate)
 
     val toastNotification = ToastNotification(xmlDoc)
-    val toastNotificationManager = ToastNotificationManager.CreateToastNotifier("032467F0-6AF8-47AB-8689-918E51874DBF_92eg4pjhhyp4c!App")
-    toastNotificationManager.Show(toastNotification)
-}
-
-fun HRESULT.print(functionName: String) {
-    println("$functionName: ${Integer.toHexString(this.toInt())}")
+    val toastNotificationManager =
+        ToastNotificationManager.CreateToastNotifier("032467F0-6AF8-47AB-8689-918E51874DBF_92eg4pjhhyp4c!App")
+    //toastNotificationManager.Show(toastNotification)
 }
