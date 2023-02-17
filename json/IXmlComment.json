@@ -1,9 +1,0 @@
-{
-  "Name": "IXmlComment",
-  "Namespace": "Windows.Data.Xml.Dom",
-  "Guid": "bca474d5b61f46119cac2e92e3476d47",
-  "Methods": [],
-  "Traits": [],
-  "GenericParameters": null,
-  "Type": "Interface"
-}
