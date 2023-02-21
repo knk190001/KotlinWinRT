@@ -142,3 +142,7 @@ inline fun <reified T : IWinRTInterface, reified R : T> Array<T>.castToImpl(): A
         }
     }.toTypedArray() as Array<T>
 }
+
+fun Guid.GUID.ByReference.getValue(): Guid.GUID {
+    return this
+}

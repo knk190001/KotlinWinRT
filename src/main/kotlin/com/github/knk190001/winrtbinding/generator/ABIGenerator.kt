@@ -32,6 +32,11 @@ fun generateProjection(): Collection<FileSpec> {
     val lookUp: LookUp = { typeReference ->
         val tr = typeReference.normalize()
         println(typeReference.fullName())
+        if(entities.none {
+                tr.equals(it)
+            }) {
+            println("Not found: ${tr.fullName()}")
+        }
         entities.first {
             tr.equals(it)
         }

@@ -82,26 +82,34 @@ private fun TypeSpec.Builder.generateClassABI(sparseClass: SparseClass) {
 }
 
 private fun TypeSpec.Builder.generateFactoryActivationCode(sparseClass: SparseClass) {
-    generateFactoryActivator(sparseClass)
-    generateFactoryLazyProperty(sparseClass)
+    generateFactoryActivators(sparseClass)
+    generateFactoryLazyProperties(sparseClass)
     generateFactoryActivationFunctions(sparseClass)
 }
 
 private fun TypeSpec.Builder.generateFactoryActivationFunctions(sparseClass: SparseClass) {
-    val factoryInterface = lookUpTypeReference(sparseClass.factoryActivatorType) as SparseInterface
-    factoryInterface.methods.forEach {
-        generateFactoryActivationFunction(sparseClass, it)
+    val factoryInterfaces = sparseClass.factoryActivatorTypes.map {
+        lookUpTypeReference(it) as SparseInterface
+    }
+
+    factoryInterfaces.flatMap {
+        it.methods.map { method -> method to it }
+    }.forEach {
+        generateFactoryActivationFunction(it.first, it.second)
     }
 }
 
-fun TypeSpec.Builder.generateFactoryActivationFunction(sparseClass: SparseClass, method: SparseMethod) {
+fun TypeSpec.Builder.generateFactoryActivationFunction(
+    method: SparseMethod,
+    factoryInterface: SparseInterface
+) {
     val activationFn = FunSpec.builder("activate").apply {
         method.parameters.forEach {
             addParameter(it.name, it.type.asClassName())
         }
         returns(Pointer::class)
         val cb = CodeBlock.builder().apply {
-            add("return ${sparseClass.factoryActivatorType.name}_Instance.${method.name}(")
+            add("return ${factoryInterface.name}_Instance.${method.name}(")
             add(method.parameters.joinToString { it.name })
             add(").pointer")
         }.build()
@@ -110,14 +118,20 @@ fun TypeSpec.Builder.generateFactoryActivationFunction(sparseClass: SparseClass,
     addFunction(activationFn)
 }
 
-private fun TypeSpec.Builder.generateFactoryLazyProperty(sparseClass: SparseClass) {
+private fun TypeSpec.Builder.generateFactoryLazyProperties(sparseClass: SparseClass) {
+    sparseClass.factoryActivatorTypes.forEach {
+        generateFactoryLazyProperty(lookUpTypeReference(it) as SparseInterface)
+    }
+}
+
+private fun TypeSpec.Builder.generateFactoryLazyProperty(factoryInterface: SparseInterface) {
     val factoryInterfaceProperty = PropertySpec.builder(
-        "${sparseClass.factoryActivatorType.name}_Instance",
-        sparseClass.factoryActivatorType.asClassName()
+        "${factoryInterface.name}_Instance",
+        factoryInterface.asTypeReference().asClassName()
     ).apply {
         val delegateCb = CodeBlock.builder().apply {
             beginControlFlow("lazy")
-            addStatement("create${sparseClass.factoryActivatorType.name}()")
+            addStatement("create${factoryInterface.name}()")
             endControlFlow()
         }.build()
 
@@ -126,9 +140,15 @@ private fun TypeSpec.Builder.generateFactoryLazyProperty(sparseClass: SparseClas
     addProperty(factoryInterfaceProperty)
 }
 
-private fun TypeSpec.Builder.generateFactoryActivator(sparseClass: SparseClass) {
-    val createFactoryActivatorFn = FunSpec.builder("create${sparseClass.factoryActivatorType.name}").apply {
-        val factoryClassName = sparseClass.factoryActivatorType.asClassName() as ClassName
+private fun TypeSpec.Builder.generateFactoryActivators(sparseClass: SparseClass) {
+    sparseClass.factoryActivatorTypes.forEach {
+        generateFactoryActivator(it)
+    }
+}
+
+private fun TypeSpec.Builder.generateFactoryActivator(factoryInterface: SparseTypeReference) {
+    val createFactoryActivatorFn = FunSpec.builder("create${factoryInterface.name}").apply {
+        val factoryClassName = factoryInterface.asClassName() as ClassName
         val cb = CodeBlock.builder().apply {
             val iidMember = factoryClassName.nestedClass("ABI").member("IID")
             addStatement("val refiid = %T(%M)", REFIID::class, iidMember)
@@ -141,11 +161,11 @@ private fun TypeSpec.Builder.generateFactoryActivator(sparseClass: SparseClass) 
             addStatement(
                 "val hr = %M.RoGetActivationFactory(%S.toHandle(),refiid,factoryActivatorPtr)",
                 win32,
-                sparseClass.fullName()
+                factoryInterface.fullName()
             )
             addStatement("checkHR(hr)")
             addStatement(
-                "return(%T.ABI.make${sparseClass.factoryActivatorType.name}(factoryActivatorPtr.value))",
+                "return(%T.ABI.make${factoryInterface.name}(factoryActivatorPtr.value))",
                 factoryClassName
             )
         }.build()
@@ -427,7 +447,6 @@ private fun TypeSpec.Builder.generateConstructor(sparseClass: SparseClass) {
             .defaultValue("Pointer.NULL")
             .build()
         addParameter(ptrParameterSpec)
-//        addModifiers(KModifier.PRIVATE)
     }.build()
     primaryConstructor(constructorSpec)
     addSuperclassConstructorParameter("ptr")
@@ -444,8 +463,12 @@ private fun TypeSpec.Builder.generateConstructor(sparseClass: SparseClass) {
 }
 
 private fun TypeSpec.Builder.generateFactoryConstructors(sparseClass: SparseClass) {
-    val factoryInterface = lookUpTypeReference(sparseClass.factoryActivatorType) as SparseInterface
-    factoryInterface.methods.forEach(::generateFactoryConstructor)
+
+    sparseClass.factoryActivatorTypes.map {
+        lookUpTypeReference(it) as SparseInterface
+    }.flatMap {
+        it.methods
+    }.forEach(::generateFactoryConstructor)
 }
 
 private fun TypeSpec.Builder.generateFactoryConstructor(sparseMethod: SparseMethod) {

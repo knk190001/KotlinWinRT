@@ -31,9 +31,8 @@ data class SparseClass(
         }.map { SparseTypeReference(it.name, it.namespace) }
     }
 
-    val factoryActivatorType by lazy {
+    val factoryActivatorTypes by lazy {
         traits.filterIsInstance<FactoryActivationTrait>()
-            .single()
-            .factoryType
+            .flatMap{ it.factoryTypes }
     }
 }

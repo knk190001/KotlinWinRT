@@ -20,6 +20,7 @@ class TraitAdapter : TypeAdapter<Trait> {
             "ValueType" -> ValueTypeTrait::class
             "DefaultInterface" -> DefaultInterfaceTrait::class
             "FlagEnum" -> FlagTrait::class
+            "CompositionActivation" -> CompositionActivationTrait::class
             else -> {
                 throw NotImplementedError("Trait $type has not been implemented")
             }

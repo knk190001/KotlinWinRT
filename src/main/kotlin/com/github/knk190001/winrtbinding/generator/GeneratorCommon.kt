@@ -8,16 +8,14 @@ import com.squareup.kotlinpoet.MemberName.Companion.member
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.sun.jna.Native
 import com.sun.jna.platform.win32.COM.Unknown
+import com.sun.jna.platform.win32.Guid
 import com.sun.jna.platform.win32.WinDef
+import com.sun.jna.platform.win32.WinDef.CHARByReference
 import com.sun.jna.platform.win32.WinDef.ULONG
 import com.sun.jna.platform.win32.WinDef.USHORT
 import com.sun.jna.platform.win32.WinDef.USHORTByReference
 import com.sun.jna.platform.win32.WinNT
-import com.sun.jna.ptr.ByReference
-import com.sun.jna.ptr.ByteByReference
-import com.sun.jna.ptr.DoubleByReference
-import com.sun.jna.ptr.FloatByReference
-import com.sun.jna.ptr.IntByReference
+import com.sun.jna.ptr.*
 import kotlin.reflect.KClass
 
 internal fun TypeSpec.Builder.generateByReferenceType(entity: INamedEntity) {
@@ -65,6 +63,7 @@ fun SparseTypeReference.asClassName(structByValue: Boolean = true, nullable: Boo
             "UInt32" -> WinDef.UINT::class.asClassName()
             "Double" -> Double::class.asClassName()
             "Boolean" -> Boolean::class.asClassName()
+            "Int16" -> Short::class.asClassName()
             "Int32" -> Int::class.asClassName()
             "Void" -> Unit::class.asClassName()
             "String" -> String::class.asClassName()
@@ -75,6 +74,8 @@ fun SparseTypeReference.asClassName(structByValue: Boolean = true, nullable: Boo
             "Char" -> Char::class.asClassName()
             "UInt16" -> USHORT::class.asClassName()
             "Single" -> Float::class.asClassName()
+            "Byte" -> Byte::class.asClassName()
+            "Guid" -> Guid.GUID::class.asClassName()
             else -> throw NotImplementedError("Type: $namespace.$name is not handled")
         }
     }
@@ -104,7 +105,9 @@ fun SparseTypeReference.asKClass(): KClass<*> {
             "UInt64" -> ULONG::class
             "Double" -> Double::class
             "Boolean" -> Boolean::class
+            "Int16" -> Short::class
             "Int32" -> Int::class
+            "Int64" -> Long::class
             "Void" -> Unit::class
             "String" -> String::class
             "UInt32&" -> WinDef.UINTByReference::class
@@ -112,6 +115,8 @@ fun SparseTypeReference.asKClass(): KClass<*> {
             "Object" -> Unknown::class
             "Single" -> Float::class
             "Char" -> Char::class
+            "Byte" -> Byte::class
+            "Guid" -> Guid.GUID::class
             else -> throw NotImplementedError("Type: $namespace.$name is not handled")
         }
     }
@@ -132,10 +137,15 @@ fun SparseTypeReference.byReferenceClassName(): TypeName {
             "Single" -> FloatByReference::class.asClassName()
             "Double" -> DoubleByReference::class.asClassName()
             "Boolean" -> ByteByReference::class.asClassName()
+            "Int16" -> ShortByReference::class.asClassName()
             "Int32" -> IntByReference::class.asClassName()
+            "Int64" -> LongByReference::class.asClassName()
             "Void" -> Unit::class.asClassName()
             "String" -> WinNT.HANDLEByReference::class.asClassName()
             "Object" -> ClassName("com.sun.jna.platform.win32.COM.Unknown", "ByReference")
+            "Byte" -> ByteByReference::class.asClassName()
+            "Guid" -> Guid.GUID.ByReference::class.asClassName()
+            "Char" -> CHARByReference::class.asClassName()
             else -> throw NotImplementedError("Type: $namespace.$name is not handled")
         }
     }

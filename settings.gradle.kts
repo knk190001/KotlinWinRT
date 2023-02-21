@@ -1,4 +1,4 @@
-rootProject.name = "TestABIGen"
+rootProject.name = "kotlin-winrt-generator"
 
 pluginManagement {
     repositories {

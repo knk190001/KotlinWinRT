@@ -4,8 +4,8 @@ plugins {
     `maven-publish`
 }
 
-group = "org.github.knk190001"
-version = "0.1.2"
+group = "com.github.knk190001"
+version = "0.1.8"
 
 repositories {
     mavenCentral()

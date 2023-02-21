@@ -330,6 +330,7 @@ private fun FileSpec.Builder.addImports() {
     addImport("com.github.knk190001.winrtbinding.runtime", "makeOutArray")
     addImport("com.github.knk190001.winrtbinding.runtime", "invokeHR")
     addImport("com.github.knk190001.winrtbinding.runtime", "castToImpl")
+    addImport("com.github.knk190001.winrtbinding.runtime", "getValue")
     addImport("com.github.knk190001.winrtbinding.runtime.interfaces", "getValue")
 }
 
