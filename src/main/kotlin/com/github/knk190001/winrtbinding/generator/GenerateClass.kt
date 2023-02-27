@@ -6,10 +6,13 @@ import com.github.knk190001.winrtbinding.generator.model.entities.*
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.MemberName.Companion.member
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.sun.jna.Pointer
 import com.sun.jna.PointerType
 import com.sun.jna.platform.win32.Guid.REFIID
 import com.sun.jna.ptr.PointerByReference
+import kotlin.math.abs
+
+private val jnaPointer = ClassName("com.github.knk190001.winrtbinding.runtime","JNAPointer")
+private val ptrNull = jnaPointer.member("NULL")
 
 fun generateClass(
     sparseClass: SparseClass,
@@ -107,7 +110,7 @@ fun TypeSpec.Builder.generateFactoryActivationFunction(
         method.parameters.forEach {
             addParameter(it.name, it.type.asClassName())
         }
-        returns(Pointer::class)
+        returns(jnaPointer)
         val cb = CodeBlock.builder().apply {
             add("return ${factoryInterface.name}_Instance.${method.name}(")
             add(method.parameters.joinToString { it.name })
@@ -142,11 +145,11 @@ private fun TypeSpec.Builder.generateFactoryLazyProperty(factoryInterface: Spars
 
 private fun TypeSpec.Builder.generateFactoryActivators(sparseClass: SparseClass) {
     sparseClass.factoryActivatorTypes.forEach {
-        generateFactoryActivator(it)
+        generateFactoryActivator(sparseClass, it)
     }
 }
 
-private fun TypeSpec.Builder.generateFactoryActivator(factoryInterface: SparseTypeReference) {
+private fun TypeSpec.Builder.generateFactoryActivator(sparseClass: SparseClass, factoryInterface: SparseTypeReference) {
     val createFactoryActivatorFn = FunSpec.builder("create${factoryInterface.name}").apply {
         val factoryClassName = factoryInterface.asClassName() as ClassName
         val cb = CodeBlock.builder().apply {
@@ -161,7 +164,7 @@ private fun TypeSpec.Builder.generateFactoryActivator(factoryInterface: SparseTy
             addStatement(
                 "val hr = %M.RoGetActivationFactory(%S.toHandle(),refiid,factoryActivatorPtr)",
                 win32,
-                factoryInterface.fullName()
+                sparseClass.fullName()
             )
             addStatement("checkHR(hr)")
             addStatement(
@@ -230,7 +233,7 @@ private fun TypeSpec.Builder.generateDirectActivationCode(sparseClass: SparseCla
 
 private fun TypeSpec.Builder.generateActivationFunction(sparseClass: SparseClass) {
     val activateSpec = FunSpec.builder("activate").apply {
-        returns(Pointer::class)
+        returns(jnaPointer)
         val cb = CodeBlock.builder().apply {
             addStatement("val result = %T()", PointerByReference::class)
             addStatement("val hr = activationFactory.activateInstance(activationFactory.ptr!!, result)")
@@ -318,7 +321,7 @@ private fun TypeSpec.Builder.generateInterfaceArray(sparseClass: SparseClass) {
             val cb = CodeBlock.builder().apply {
                 add("return arrayOf(")
                 add(sparseClass.interfaces.joinToString {
-                    "${it.getProjectedName()}_Interface"
+                    it.getInterfacePropertyName()
                 })
                 add(")\n")
             }.build()
@@ -337,13 +340,13 @@ private fun TypeSpec.Builder.generateInterfacePointerProperties(sparseClass: Spa
 
 fun generateInterfacePointerProperty(sparseTypeReference: SparseTypeReference): PropertySpec {
     return PropertySpec.builder(
-        "${sparseTypeReference.getProjectedName()}_Ptr",
-        Pointer::class.asClassName().copy(true)
+        sparseTypeReference.getInterfacePointerName(),
+        jnaPointer.copy(true)
     ).apply {
         addModifiers(KModifier.OVERRIDE)
         val delegateCb = CodeBlock.builder().apply {
             beginControlFlow("lazy")
-            addStatement("${sparseTypeReference.getProjectedName()}_Interface.${sparseTypeReference.getProjectedName()}_Ptr")
+            addStatement("${sparseTypeReference.getInterfacePropertyName()}.${sparseTypeReference.getInterfacePointerName()}")
             endControlFlow()
         }.build()
         delegate(delegateCb)
@@ -375,9 +378,9 @@ private fun TypeSpec.Builder.generateClassMethod(sparseMethod: SparseMethod, typ
         }
         addModifiers(KModifier.OVERRIDE)
         returns(sparseMethod.returnType.asClassName(false))
-        val name = typeReference.getProjectedName()
+        val name = typeReference.getInterfacePropertyName()
         val cb = CodeBlock.builder().apply {
-            add("return ${name}_Interface.${sparseMethod.name}(")
+            add("return ${name}.${sparseMethod.name}(")
             add(sparseMethod.parameters.joinToString { it.name })
             add(")")
         }.build()
@@ -394,10 +397,10 @@ private fun TypeSpec.Builder.generateLazyInterfaceProperties(sparseClass: Sparse
 }
 
 private fun generateLazyInterfaceProperty(typeReference: SparseTypeReference) =
-    PropertySpec.builder("${typeReference.getProjectedName()}_Interface", typeReference.asClassName()).apply {
+    PropertySpec.builder(typeReference.getInterfacePropertyName(), typeReference.asClassName()).apply {
         val delegateCb = CodeBlock.builder().apply {
             beginControlFlow("lazy")
-            addStatement("as${typeReference.getProjectedName()}()")
+            addStatement("${typeReference.getCastFunctionName()}()")
             endControlFlow()
         }.build()
         delegate(delegateCb)
@@ -408,15 +411,31 @@ private fun TypeSpec.Builder.generateQueryInterfaceMethods(sparseClass: SparseCl
         .map(::generateQueryInterfaceMethod)
         .forEach(this::addFunction)
 }
+fun hashID(str: String): String {
+    return "_${abs(str.hashCode())}"
+}
+fun SparseTypeReference.hashID():String {
+    return hashID("${namespace}${normalize().getProjectedName()}")
+}
+fun SparseTypeReference.getCastFunctionName(): String {
+    return "as${hashID()}"
+}
+
+fun SparseTypeReference.getInterfacePropertyName(): String {
+    return "_${hashID()}_Interface"
+}
+fun SparseTypeReference.getInterfacePointerName(): String {
+    return "_${hashID()}_Ptr"
+}
 
 private fun generateQueryInterfaceMethod(typeReference: SparseTypeReference) =
-    FunSpec.builder("as${typeReference.getProjectedName()}").apply {
+    FunSpec.builder(typeReference.getCastFunctionName()).apply {
         addModifiers(KModifier.PRIVATE)
         val cb = CodeBlock.builder().apply {
-            beginControlFlow("if(pointer == Pointer.NULL)")
+            beginControlFlow("if(pointer == %M)", ptrNull)
             addStatement(
-                "return(%T.ABI.make${typeReference.getProjectedName()}(Pointer.NULL))",
-                typeReference.asClassName()
+                "return(%T.ABI.make${typeReference.getProjectedName()}(%M))",
+                typeReference.asClassName(), ptrNull
             )
             endControlFlow()
             val iidStatement = if (typeReference.hasActualizedGenericParameter()) {
@@ -443,8 +462,8 @@ private fun generateQueryInterfaceMethod(typeReference: SparseTypeReference) =
 
 private fun TypeSpec.Builder.generateConstructor(sparseClass: SparseClass) {
     val constructorSpec = FunSpec.constructorBuilder().apply {
-        val ptrParameterSpec = ParameterSpec.builder("ptr", Pointer::class.asClassName().copy(true))
-            .defaultValue("Pointer.NULL")
+        val ptrParameterSpec = ParameterSpec.builder("ptr", jnaPointer.copy(true))
+            .defaultValue("%M", ptrNull)
             .build()
         addParameter(ptrParameterSpec)
     }.build()

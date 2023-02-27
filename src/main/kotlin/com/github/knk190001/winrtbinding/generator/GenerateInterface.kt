@@ -1,9 +1,7 @@
 package com.github.knk190001.winrtbinding.generator
 
-import com.github.knk190001.winrtbinding.generator.model.entities.IDirectProjectable
-import com.github.knk190001.winrtbinding.generator.model.entities.SparseInterface
-import com.github.knk190001.winrtbinding.generator.model.entities.SparseMethod
-import com.github.knk190001.winrtbinding.generator.model.entities.SparseTypeReference
+import com.github.knk190001.winrtbinding.generator.model.entities.*
+import com.github.knk190001.winrtbinding.runtime.interfaces.IUnknownVtbl
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.MemberName.Companion.member
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
@@ -12,8 +10,13 @@ import com.sun.jna.NativeMapped
 import com.sun.jna.Pointer
 import com.sun.jna.PointerType
 import com.sun.jna.platform.win32.Guid
+import com.sun.jna.platform.win32.Guid.REFIID
 import com.sun.jna.ptr.ByReference
+import com.sun.jna.ptr.PointerByReference
 import com.sun.jna.Function as JNAFunction
+
+private val ptrNull = Pointer::class.asClassName().member("NULL")
+private val jnaPointer = ClassName("com.github.knk190001.winrtbinding.runtime", "JNAPointer")
 
 fun generateInterface(
     sparseInterface: SparseInterface,
@@ -21,23 +24,159 @@ fun generateInterface(
     projectInterface: ProjectInterface
 ) = FileSpec.builder(sparseInterface.namespace, sparseInterface.name).apply {
     addImports()
-
+    if (sparseInterface.genericParameters?.all { it.type == null } == true) {
+        return generateParameterizedInterface(
+            sparseInterface.withName(
+                sparseInterface.name.replaceAfter('`', "").dropLast(1)
+            )
+        )
+    }
     val interfaceSpec = TypeSpec.interfaceBuilder(sparseInterface.name).apply {
-        addSuperinterface(NativeMapped::class)
-        addSuperinterface(ClassName("com.github.knk190001.winrtbinding.runtime.interfaces", "IWinRTInterface"))
+        addSuperInterfaces(sparseInterface)
 
-        addProperty("${sparseInterface.name}_Ptr", Pointer::class.asClassName().copy(true))
-
+        addProperty(
+            sparseInterface.asTypeReference().getInterfacePointerName(),
+            Pointer::class.asClassName().copy(true)
+        )
+        addAnnotation(JvmDefaultWithoutCompatibility::class)
         addVtblPtrProperty(sparseInterface)
         addMethods(sparseInterface, lookUp, projectInterface)
         addByReferenceType(sparseInterface)
-        generateImplementation(sparseInterface, lookUp, projectInterface)
+        generateImplementation(sparseInterface, projectInterface)
         addABI(sparseInterface, lookUp)
         generateCompanion(sparseInterface)
     }.build()
     addType(interfaceSpec)
 
 }.build()
+
+fun generateParameterizedInterface(sparseInterface: SparseInterface): FileSpec {
+    return FileSpec.builder(sparseInterface.namespace, sparseInterface.name).apply {
+        addImports()
+        addParameterizedInterface(sparseInterface)
+    }.build()
+}
+
+private fun FileSpec.Builder.addParameterizedInterface(sparseInterface: SparseInterface) {
+    val parameterizedInterface = TypeSpec.interfaceBuilder(sparseInterface.name).apply {
+        addTypeParameters(sparseInterface)
+        addGenericSuperInterfaces(sparseInterface)
+        addGenericInterfaceMethods(sparseInterface)
+        generateParameterizedByReference(sparseInterface)
+    }.build()
+    addType(parameterizedInterface)
+}
+
+private fun TypeSpec.Builder.addGenericInterfaceMethods(sparseInterface: SparseInterface) {
+    sparseInterface.methods
+        .map(::generateGenericInterfaceMethod)
+        .forEach(this::addFunction)
+}
+
+fun generateGenericInterfaceMethod(method: SparseMethod): FunSpec =
+    FunSpec.builder(method.name).apply {
+        addModifiers(KModifier.ABSTRACT)
+        method.parameters.forEach {
+            if (it.type.namespace == "") {
+                if (it.type.isArray) {
+                    addParameter(
+                        it.name,
+                        Array::class.asClassName()
+                            .parameterizedBy(TypeVariableName(it.type.name).copy(true))
+                    )
+                } else {
+                    addParameter(it.name, TypeVariableName.invoke(it.type.name))
+                }
+            } else {
+                addParameter(it.name, it.type.asGenericTypeParameter(false))
+            }
+        }
+        if (method.returnType.namespace == "") {
+            returns(TypeVariableName.invoke(method.returnType.name))
+        } else {
+            returns(method.returnType.asGenericTypeParameter(false))
+        }
+    }.build()
+
+private fun TypeSpec.Builder.addGenericSuperInterfaces(sparseInterface: SparseInterface) {
+    addSuperinterface(NativeMapped::class)
+    sparseInterface.superInterfaces
+        .map(SparseTypeReference::asGenericTypeParameter)
+        .forEach(this::addSuperinterface)
+}
+
+fun SparseTypeReference.asGenericTypeParameter(structByValue: Boolean = true): TypeName {
+    if (this.genericParameters == null && !isArray) {
+        return this.asClassName(structByValue)
+    }
+    if (this.name.contains("`")) {
+        return this.copy(
+            name = name.replaceAfter('`', "").dropLast(1)
+        ).asGenericTypeParameter(structByValue)
+    }
+    if (this.isArray) {
+        return Array::class
+            .asClassName()
+            .parameterizedBy(this.copy(isArray = false).asGenericTypeParameter(structByValue).copy(true))
+    }
+    val typeParameters = genericParameters!!.map {
+        if (it.type == null) {
+            TypeVariableName(it.name)
+        } else if (it.type!!.namespace == "") {
+            TypeVariableName(it.type.name)
+        } else {
+            it.type.asGenericTypeParameter(structByValue)
+        }
+    }.toList()
+
+    if (this.isReference) {
+        return ClassName(namespace, name)
+            .nestedClass("ByReference")
+            .parameterizedBy(typeParameters)
+    }
+    return ClassName(namespace, name).parameterizedBy(typeParameters)
+
+}
+
+private fun TypeSpec.Builder.generateParameterizedByReference(sparseInterface: SparseInterface) {
+    val byReferenceInterfaceSpec = TypeSpec.interfaceBuilder("ByReference").apply {
+        addTypeParameters(sparseInterface)
+
+        val getValueFn = FunSpec.builder("getValue").apply {
+            if (sparseInterface.genericParameters != null) {
+                addModifiers(KModifier.ABSTRACT)
+            }
+            returns(sparseInterface.asTypeReference().asGenericTypeParameter())
+        }.build()
+        addFunction(getValueFn)
+
+    }.build()
+
+    addType(byReferenceInterfaceSpec)
+}
+
+fun SparseTypeReference.dropGenericParameterCount(): SparseTypeReference {
+    if (!this.name.contains('`')) return this
+    return this.copy(name = name.replaceAfter('`', "").dropLast(1))
+}
+
+private fun TypeSpec.Builder.addTypeParameters(sparseInterface: SparseInterface) {
+    sparseInterface.genericParameters!!
+        .map(SparseGenericParameter::name)
+        .map(TypeVariableName::invoke)
+        .forEach(this::addTypeVariable)
+}
+
+private fun TypeSpec.Builder.addSuperInterfaces(sparseInterface: SparseInterface) {
+    addSuperinterface(NativeMapped::class)
+    if (sparseInterface.genericParameters != null) {
+        addSuperinterface(sparseInterface.asTypeReference().normalize().asGenericTypeParameter(false))
+    }
+    addSuperinterface(ClassName("com.github.knk190001.winrtbinding.runtime.interfaces", "IWinRTInterface"))
+    sparseInterface.superInterfaces
+        .map(SparseTypeReference::asClassName)
+        .forEach(this::addSuperinterface)
+}
 
 private fun TypeSpec.Builder.generateCompanion(sparseInterface: SparseInterface) {
     val companionSpec = TypeSpec.companionObjectBuilder().apply {
@@ -64,11 +203,11 @@ fun TypeSpec.Builder.generateMakeArrayOfNullsFunction(sparseInterface: SparseInt
 private fun TypeSpec.Builder.generateMakeArrayFunction(sparseInterface: SparseInterface) {
     val makeArraySpec = FunSpec.builder("makeArray").apply {
         addParameter("elements", ClassName("", sparseInterface.name), KModifier.VARARG)
-        returns(Array::class.asClassName().parameterizedBy(ClassName("", sparseInterface.name)))
+        returns(Array::class.asClassName().parameterizedBy(ClassName("", sparseInterface.name).copy(true)))
         val cb = CodeBlock.builder().apply {
             val interfaceClassName = ClassName("", sparseInterface.name)
             addStatement(
-                "return (elements as Array<%T>).castToImpl<%T,${sparseInterface.name}_Impl>()",
+                "return (elements as Array<%T?>).castToImpl<%T,${sparseInterface.name}_Impl>()",
                 interfaceClassName,
                 interfaceClassName
             )
@@ -80,17 +219,81 @@ private fun TypeSpec.Builder.generateMakeArrayFunction(sparseInterface: SparseIn
 
 private fun TypeSpec.Builder.generateImplementation(
     sparseInterface: SparseInterface,
-    lookUp: LookUp,
     projectInterface: ProjectInterface
 ) {
     val implementationSpec = TypeSpec.classBuilder("${sparseInterface.name}_Impl").apply {
         superclass(PointerType::class)
         addSuperinterface(ClassName("", sparseInterface.name))
-
+        addSuperInterfaces(sparseInterface)
+        addSIProperties(sparseInterface, projectInterface)
         addPointerProperty(sparseInterface)
         addConstructor()
     }.build()
     addType(implementationSpec)
+}
+
+private fun TypeSpec.Builder.addSIProperties(sparseInterface: SparseInterface, projectInterface: ProjectInterface) {
+    val superInterfaces = mutableMapOf<String, SparseTypeReference>()
+    sparseInterface.superInterfaces.forEach { typeReference ->
+        addSuperInterfacePtrProperties(sparseInterface, typeReference, projectInterface) {
+            superInterfaces[it.getProjectedName()] = it
+        }
+    }
+
+    superInterfaces.values.forEach {
+        addSuperInterfacePtrProperty(sparseInterface, it)
+    }
+}
+
+private fun TypeSpec.Builder.addSuperInterfacePtrProperties(
+    thisInterface: SparseInterface,
+    superInterface: SparseTypeReference,
+    projectInterface: ProjectInterface,
+    addProperty: (SparseTypeReference) -> Unit
+) {
+    val resolved = lookUpTypeReference(superInterface) as SparseInterface
+    val projectedInterface = resolved
+        .copy(genericParameters = superInterface.genericParameters)
+        .projectAll()
+    if (superInterface.genericParameters != null) {
+        projectInterface(resolved, superInterface.genericParameters)
+    }
+    //addSuperInterfacePtrProperty(thisInterface, superInterface)
+    addProperty(superInterface)
+    projectedInterface.superInterfaces.forEach {
+        addSuperInterfacePtrProperties(thisInterface, it, projectInterface, addProperty)
+    }
+}
+
+
+private fun TypeSpec.Builder.addSuperInterfacePtrProperty(
+    thisInterface: SparseInterface,
+    superInterface: SparseTypeReference
+) {
+    val ptrSpec = PropertySpec.builder(
+        superInterface.getInterfacePointerName(),
+        jnaPointer,
+        KModifier.OVERRIDE
+    ).apply {
+        val delegateCb = CodeBlock.builder().apply {
+            beginControlFlow("lazy")
+            val memberName = if (superInterface.genericParameters != null) {
+                "PIID"
+            } else {
+                "IID"
+            }
+            val iid = (superInterface.asClassName() as ClassName).nestedClass("ABI").member(memberName)
+            addStatement("val refiid = %T(%M)", REFIID::class, iid)
+            addStatement("val result = %T()", PointerByReference::class)
+            val iUnknownVtbl = IUnknownVtbl::class
+            addStatement("%T(${thisInterface.vtblName()}).queryInterface(pointer,refiid,result)", iUnknownVtbl)
+            addStatement("result.value")
+            endControlFlow()
+        }.build()
+        delegate(delegateCb)
+    }.build()
+
+    addProperty(ptrSpec)
 }
 
 private fun TypeSpec.Builder.addPointerProperty(sparseInterface: SparseInterface) {
@@ -99,12 +302,15 @@ private fun TypeSpec.Builder.addPointerProperty(sparseInterface: SparseInterface
         .build()
 
     val pointerPropertySpec =
-        PropertySpec.builder("${sparseInterface.name}_Ptr", Pointer::class.asClassName().copy(true))
+        PropertySpec.builder(sparseInterface.pointerName(), Pointer::class.asClassName().copy(true))
             .getter(getter)
             .addModifiers(KModifier.OVERRIDE)
             .build()
     addProperty(pointerPropertySpec)
 }
+
+private fun SparseInterface.pointerName() =
+    this.asTypeReference().getInterfacePointerName()
 
 private fun TypeSpec.Builder.addByReferenceType(sparseInterface: SparseInterface) {
     val spec = TypeSpec.classBuilder("ByReference").apply {
@@ -119,8 +325,18 @@ internal fun TypeSpec.Builder.generateByReferenceInterface(entity: SparseInterfa
     superclass(ByReference::class)
     val ptrSize = Native::class.member("POINTER_SIZE")
     addSuperclassConstructorParameter("%M", ptrSize)
+    if (entity.genericParameters != null) {
+        val superinterface = ClassName(entity.namespace, entity.name.replaceAfter('_', "").dropLast(1))
+            .nestedClass("ByReference")
+            .parameterizedBy(entity.genericParameters!!.map { it.type!!.asGenericTypeParameter(false) })
+
+        addSuperinterface(superinterface)
+    }
 
     val getValueSpec = FunSpec.builder("getValue").apply {
+        if (entity.genericParameters != null) {
+            addModifiers(KModifier.OVERRIDE)
+        }
         addCode("return ABI.make${entity.name}(pointer.getPointer(0))", className)
     }.build()
     addFunction(getValueSpec)
@@ -183,7 +399,17 @@ private fun TypeSpec.Builder.addMethods(
             projectMethodTypes(method, lookUp, projectInterface)
 
             FunSpec.builder(method.name).apply {
-                method.parameters.forEach { addParameter(it.name, it.type.asClassName()) }
+                if (sparseInterface.genericParameters != null) {
+                    addModifiers(KModifier.OVERRIDE)
+                }
+                method.parameters.forEach {
+                    if (sparseInterface.genericParameters != null) {
+                        addParameter(it.name, it.type.asGenericTypeParameter(false))
+                    } else {
+                        addParameter(it.name, it.type.asClassName(false))
+                    }
+
+                }
                 addInterfaceMethodBody(method, index, sparseInterface)
                 if (!method.returnType.isVoid()) returns(method.returnType.asClassName(false))
             }.build()
@@ -218,7 +444,13 @@ private fun CodeBlock.Builder.generateInterfaceMethodBody(
     addStatement("val fnPtr = ${sparseInterface.vtblName()}!!.getPointer(${index + 6}L * %M)", pointerSize)
     addStatement("val fn = %T.getFunction(fnPtr, %M)", JNAFunction::class, stdConvention)
 
-    val marshalledNames = marshalParameters(method)
+    val marshalledNames = marshalParameters(method).map {
+        if (reservedWords.contains(it)) {
+            "`$it`"
+        } else {
+            it
+        }
+    }
 
     if (!method.returnType.isVoid()) {
         if (method.returnType.isArray) {
@@ -231,7 +463,7 @@ private fun CodeBlock.Builder.generateInterfaceMethodBody(
         }
     }
 
-    add("val hr = fn.invokeHR(arrayOf(${sparseInterface.name}_Ptr, ")
+    add("val hr = fn.invokeHR(arrayOf(${sparseInterface.pointerName()}, ")
     add(marshalledNames.joinToString())
 
     if (method.parameters.isNotEmpty()) {
@@ -253,7 +485,17 @@ private fun CodeBlock.Builder.generateInterfaceMethodBody(
     val (unmarshalledName, unmarshallingCode) = returnMarshaller.generateFromNativeMarshalCode("resultValue")
 
     if (method.returnType.isArray) {
-        addStatement("val resultValue = result.array")
+        add("val resultValue = result.array")
+        if (method.returnType.namespace != "System" && lookUpTypeReference(
+                method.returnType.copy(
+                    isArray = false,
+                    isReference = false
+                )
+            ) is SparseStruct
+        ) {
+            add(" as %T", method.returnType.copy(isReference = false).asClassName())
+        }
+        add("\n")
     } else {
         addStatement("val resultValue = result.getValue()")
     }
@@ -301,7 +543,7 @@ private fun projectType(typeReference: SparseTypeReference, lookUp: LookUp, proj
 private fun TypeSpec.Builder.addConstructor() {
     val constructorSpec = FunSpec.constructorBuilder().apply {
         val ptrParameterSpec = ParameterSpec.builder("ptr", Pointer::class.asClassName().copy(true))
-            .defaultValue("Pointer.NULL")
+            .defaultValue("%M", ptrNull)
             .build()
         addParameter(ptrParameterSpec)
     }.build()
@@ -311,13 +553,13 @@ private fun TypeSpec.Builder.addConstructor() {
 }
 
 fun SparseInterface.vtblName(): String {
-    return "${name}_VtblPtr"
+    return "${asTypeReference().hashID()}_VtblPtr"
 }
 
 private fun TypeSpec.Builder.addVtblPtrProperty(sparseInterface: SparseInterface) {
-    val getterSpec = FunSpec.getterBuilder().addCode("return ${sparseInterface.name}_Ptr?.getPointer(0)").build()
+    val getterSpec = FunSpec.getterBuilder().addCode("return ${sparseInterface.pointerName()}?.getPointer(0)").build()
 
-    val vtblPtrSpec = PropertySpec.builder("${sparseInterface.name}_VtblPtr", Pointer::class.asClassName().copy(true))
+    val vtblPtrSpec = PropertySpec.builder(sparseInterface.vtblName(), Pointer::class.asClassName().copy(true))
         .getter(getterSpec)
         .build()
 

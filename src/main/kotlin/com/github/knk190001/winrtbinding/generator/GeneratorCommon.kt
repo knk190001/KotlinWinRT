@@ -1,8 +1,10 @@
 package com.github.knk190001.winrtbinding.generator
 
 import com.github.knk190001.winrtbinding.generator.model.entities.INamedEntity
+import com.github.knk190001.winrtbinding.generator.model.entities.SparseGenericParameter
 import com.github.knk190001.winrtbinding.generator.model.entities.SparseStruct
 import com.github.knk190001.winrtbinding.generator.model.entities.SparseTypeReference
+import com.github.knk190001.winrtbinding.runtime.CharByReference
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.MemberName.Companion.member
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
@@ -15,11 +17,15 @@ import com.sun.jna.platform.win32.WinDef.ULONG
 import com.sun.jna.platform.win32.WinDef.USHORT
 import com.sun.jna.platform.win32.WinDef.USHORTByReference
 import com.sun.jna.platform.win32.WinNT
+import com.sun.jna.platform.win32.WinNT.HANDLE
 import com.sun.jna.ptr.*
 import kotlin.reflect.KClass
 
-internal fun TypeSpec.Builder.generateByReferenceType(entity: INamedEntity) {
-    val className = ClassName("", entity.name)
+internal fun TypeSpec.Builder.generateByReferenceType(
+    entity: INamedEntity,
+    genericParams: List<SparseGenericParameter> = emptyList()
+) {
+    val className = ClassName.bestGuess("${entity.namespace}.${entity.name}")
 
     superclass(ByReference::class)
     val ptrSize = Native::class.member("POINTER_SIZE")
@@ -27,7 +33,7 @@ internal fun TypeSpec.Builder.generateByReferenceType(entity: INamedEntity) {
 
     val getValueSpec = FunSpec.builder("getValue").apply {
         addCode("return %T(pointer.getPointer(0))", className)
-        returns(className)
+//        returns(className)
     }.build()
     addFunction(getValueSpec)
 
@@ -145,7 +151,7 @@ fun SparseTypeReference.byReferenceClassName(): TypeName {
             "Object" -> ClassName("com.sun.jna.platform.win32.COM.Unknown", "ByReference")
             "Byte" -> ByteByReference::class.asClassName()
             "Guid" -> Guid.GUID.ByReference::class.asClassName()
-            "Char" -> CHARByReference::class.asClassName()
+            "Char" -> CharByReference::class.asClassName()
             else -> throw NotImplementedError("Type: $namespace.$name is not handled")
         }
     }
@@ -157,3 +163,5 @@ fun SparseTypeReference.byReferenceClassName(): TypeName {
     return ClassName(this.namespace + ".${this.name}", "ByReference")
 }
 
+//val reservedWords = listOf("as","break","class","continue","do","else","false","for","fun","if","in","interface","null","object","package","return", "super", "this","throw", "true", "try", "tyoe")
+val reservedWords = listOf("package", "object")

@@ -24,8 +24,16 @@ data class SparseTypeReference(
     }
 
     fun normalize(): SparseTypeReference {
-        if (!this.name.contains("_")) return this
-        return copy(name = "${name.replaceAfter('_', "").dropLast(1)}`${genericParameters!!.count()}")
+        if (!name.contains("_") && genericParameters == null||
+            !name.contains('`') && genericParameters == null
+        ) return this
+        if (this.name.contains("_")) {
+            return copy(name = "${name.replaceAfter('_', "").dropLast(1)}`${genericParameters!!.count()}")
+        }
+        if (!name.contains('`') && genericParameters != null) {
+            return copy(name = "${name}`${genericParameters.count()}")
+        }
+        return this
     }
 
     fun hasActualizedGenericParameter(): Boolean {
@@ -40,7 +48,7 @@ data class SparseTypeReference(
 
     fun getProjectedName(): String {
         if (!hasActualizedGenericParameter()) return name
-        val nameWithoutBackTick = name.replaceAfterLast('`',"").dropLast(1)
+        val nameWithoutBackTick = name.replaceAfterLast('`', "").dropLast(1)
         val pName = genericParameters!!.map {
             it.type!!.getProjectedName()
         }.fold(nameWithoutBackTick + separator) { acc, parameterName ->
@@ -68,5 +76,9 @@ data class SparseTypeReference(
         result = 31 * result + namespace.hashCode()
         result = 31 * result + (genericParameters?.hashCode() ?: 0)
         return result
+    }
+
+    fun isSystemType(): Boolean {
+        return namespace == "System"
     }
 }

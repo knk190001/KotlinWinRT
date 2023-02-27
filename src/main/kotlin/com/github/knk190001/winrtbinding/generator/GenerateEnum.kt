@@ -27,8 +27,8 @@ fun generateEnum(sEnum : SparseEnum): FileSpec {
 
         val fromNativeSpec = FunSpec.builder("fromNative").apply {
             addModifiers(KModifier.OVERRIDE)
-            addParameter("nativeValue", Any::class.asTypeName().copy(true))
-            addParameter("context", FromNativeContext::class.asTypeName().copy(true))
+            addParameter("nativeValue", ClassName("","kotlin.Any").copy(true))
+            addParameter("context", FromNativeContext::class.asClassName().copy(true))
             returns(ClassName(sEnum.namespace, sEnum.name))
 
             val cb = CodeBlock.builder().apply {
@@ -54,7 +54,7 @@ fun generateEnum(sEnum : SparseEnum): FileSpec {
 
         val nativeTypeSpec = FunSpec.builder("nativeType").apply {
             addModifiers(KModifier.OVERRIDE)
-            returns(Class::class.asClassName().parameterizedBy(STAR))
+            returns(ClassName("","java.lang.Class").parameterizedBy(STAR))
             addCode("return %T::class.java",Integer::class.java)
         }.build()
 

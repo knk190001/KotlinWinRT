@@ -6,11 +6,12 @@ import com.github.knk190001.winrtbinding.generator.model.entities.SparseGenericP
 import com.github.knk190001.winrtbinding.generator.model.entities.SparseInterface
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.jvm.jvmOverloads
 import com.sun.jna.Memory
 import com.sun.jna.Native
+import com.sun.jna.NativeMapped
 import com.sun.jna.Pointer
 import com.sun.jna.platform.win32.Guid
-import com.sun.jna.platform.win32.Guid.GUID
 import com.sun.jna.platform.win32.WinNT.HRESULT
 import com.sun.jna.ptr.ByReference
 import com.sun.jna.win32.StdCallLibrary.StdCallCallback
@@ -20,12 +21,16 @@ fun generateDelegate(
     lookUpTypeReference: LookUp,
     projectType: (IDirectProjectable<*>, List<SparseGenericParameter>) -> Unit
 ) = FileSpec.builder(sd.namespace, sd.name).apply {
-    addImport("com.github.knk190001.winrtbinding.runtime.interfaces", "getValue")
-
+    addImports()
+    if (sd.genericParameters != null &&
+        sd.genericParameters.all { it.type == null }
+    ) {
+        return generateGenericDelegateInterface(sd.withName(sd.name.replaceAfter('`', "").dropLast(1)))
+    }
     generateProjections(sd, lookUpTypeReference, projectType)
     val delegateTypeName = ClassName(sd.namespace, sd.name)
     val delegateParameters = sd.parameters.map {
-        ParameterSpec.builder(it.name, it.type.asClassName()).build()
+        ParameterSpec.builder(it.name, it.type.asClassName(false)).build()
     }
     val delegateBodyTypeName = LambdaTypeName.get(delegateTypeName, delegateParameters, sd.returnType.asClassName())
 
@@ -37,6 +42,9 @@ fun generateDelegate(
 
     val delegateClass = TypeSpec.classBuilder(sd.name).apply {
         superclass(superClassName)
+        if (sd.genericParameters != null) {
+            addSuperinterface(sd.asTypeReference().normalize().dropGenericParameterCount().asGenericTypeParameter(false))
+        }
         generateConstructor()
         generateCompanion(sd, delegateTypeName)
         generateNativeInterface(sd)
@@ -47,14 +55,56 @@ fun generateDelegate(
     addType(delegateClass)
 }.build()
 
+fun generateGenericDelegateInterface(sd: SparseDelegate): FileSpec {
+    return FileSpec.builder(sd.namespace, sd.name).apply {
+        val delegateSpec = TypeSpec.interfaceBuilder(sd.name).apply {
+            addTypeParameters(sd)
+            addSuperinterface(NativeMapped::class)
+            val invokeSpec = FunSpec.builder("invoke").apply {
+                addModifiers(KModifier.ABSTRACT)
+                sd.parameters.forEach {
+                    if (it.type.namespace == "") {
+                        addParameter(it.name, TypeVariableName(it.type.name))
+                    } else {
+                        addParameter(it.name, it.type.asGenericTypeParameter())
+                    }
+                }
+                returns(sd.returnType.asGenericTypeParameter())
+            }.build()
+            addFunction(invokeSpec)
+        }.build()
+        addType(delegateSpec)
+    }.build()
+}
+
+fun TypeSpec.Builder.addTypeParameters(sd: SparseDelegate) {
+    sd.genericParameters!!
+        .map(SparseGenericParameter::name)
+        .map(TypeVariableName::invoke)
+        .forEach(::addTypeVariable)
+}
+
+private fun FileSpec.Builder.addImports() {
+    addImport("com.github.knk190001.winrtbinding.runtime.interfaces", "getValue")
+    addImport("com.github.knk190001.winrtbinding.runtime", "toHandle")
+    addImport("com.github.knk190001.winrtbinding.runtime", "castToImpl")
+    addImport("com.github.knk190001.winrtbinding.runtime", "handleToString")
+    addImport("com.github.knk190001.winrtbinding.runtime", "setValue")
+    addImport("com.github.knk190001.winrtbinding.runtime", "iUnknownIID")
+}
+
 fun TypeSpec.Builder.generateInvokeFunction(sd: SparseDelegate) {
     val invokeFn = FunSpec.builder("invoke").apply {
+        if (sd.genericParameters != null) {
+            addModifiers(KModifier.OVERRIDE)
+        }
         sd.parameters.forEach {
-            addParameter(it.name, it.type.asClassName())
+            addParameter(it.name, it.type.asGenericTypeParameter(false))
         }
         val cb = CodeBlock.builder().apply {
             if (sd.returnType.name != "Void") {
                 addStatement("val result = %T()", sd.returnType.byReferenceClassName())
+                returns(sd.returnType.asGenericTypeParameter())
             }
             val marshalledParameters = sd.parameters.map {
                 Marshaller.marshals.getOrDefault(it.type.asKClass(), Marshaller.default)
@@ -77,10 +127,12 @@ fun TypeSpec.Builder.generateInvokeFunction(sd: SparseDelegate) {
                 } else {
                     name
                 }
+            }.toMutableList().apply {
+                if (sd.returnType.name != "Void") {
+                    add("result")
+                }
             }.joinToString())
-            if (sd.returnType.name != "Void") {
-                add("result")
-            }
+
             addStatement(")")
 
             if (sd.returnType.name != "Void") {
@@ -124,19 +176,22 @@ private fun TypeSpec.Builder.generateCompanion(
                 sd.parameters.forEach {
                     if (it.type.namespace != "System" && lookUpTypeReference(
                             it.type
-                        ) is SparseInterface) {
+                        ) is SparseInterface
+                    ) {
                         addStatement("${it.name}: %T,", Pointer::class)
+                    } else if (Marshaller.marshals.contains(it.type.asKClass())) {
+                        addStatement("${it.name}: %T,", Marshaller.marshals[it.type.asKClass()]!!.nativeType)
                     } else {
-                        addStatement("${it.name}: %T,", it.type.asClassName())
+                        addStatement("${it.name}: %T,", it.type.asClassName(false))
                     }
                 }
                 if (sd.returnType.name != "Void") {
-                    addStatement("retVal: %T -> ", sd.returnType.asClassName())
+                    addStatement("retVal: %T -> ", sd.returnType.byReferenceClassName())
                 } else {
                     addStatement(" ->")
                 }
                 unindent()
-                addStatement("val thisObj = %T()", delegateTypeName)
+                addStatement("val thisObj = %T(thisPtr)", delegateTypeName)
                 val marshalledNames = sd.parameters.map {
                     val marshalResult = Marshaller.marshals.getOrDefault(it.type.asKClass(), Marshaller.default)
                         .generateFromNativeMarshalCode(it.name)
@@ -149,30 +204,36 @@ private fun TypeSpec.Builder.generateCompanion(
                     add(marshalledNames.mapIndexed { idx, name ->
                         if (sd.parameters[idx].type.namespace != "System" && lookUpTypeReference(
                                 sd.parameters[idx].type
-                            ) is SparseInterface) {
+                            ) is SparseInterface
+                        ) {
                             "${sd.parameters[idx].type.getProjectedName()}.ABI.make${sd.parameters[idx].type.getProjectedName()}(${sd.parameters[idx].name})"
                         } else {
                             name
                         }
-                    }.joinToString ())
+                    }.joinToString())
                     add(")\n")
                     val marshalledReturnValue =
                         Marshaller.marshals.getOrDefault(sd.returnType.asKClass(), Marshaller.default)
                             .generateToNativeMarshalCode("result")
                     add(marshalledReturnValue.second)
-                    addStatement("retVal.setValue(${marshalledReturnValue.first})")
+                    if (!sd.returnType.isSystemType() && lookUpTypeReference(sd.returnType) is SparseInterface) {
+                        addStatement("retVal.setValue(${marshalledReturnValue.first}.castToImpl())")
+                    } else {
+                        addStatement("retVal.setValue(${marshalledReturnValue.first})")
+                    }
                 } else {
                     add("fn(thisObj, ")
 //                    add(marshalledNames.joinToString())
                     add(marshalledNames.mapIndexed { idx, name ->
                         if (sd.parameters[idx].type.namespace != "System" && lookUpTypeReference(
                                 sd.parameters[idx].type
-                            ) is SparseInterface) {
+                            ) is SparseInterface
+                        ) {
                             "${sd.parameters[idx].type.getProjectedName()}.ABI.make${sd.parameters[idx].type.getProjectedName()}(${sd.parameters[idx].name})"
                         } else {
                             name
                         }
-                    }.joinToString ())
+                    }.joinToString())
                     add(")\n")
                 }
                 addStatement("%T(0)", HRESULT::class)
@@ -184,7 +245,7 @@ private fun TypeSpec.Builder.generateCompanion(
                 } else {
                     "IID"
                 }
-                addStatement("newDelegate.init(listOf(ABI.$iidType), nativeFn)", Guid.IID::class, sd.guid)
+                addStatement("newDelegate.init(listOf(ABI.$iidType,iUnknownIID), nativeFn)", Guid.IID::class, sd.guid)
                 addStatement("return newDelegate")
             }.build()
             addCode(cb)
@@ -204,8 +265,10 @@ private fun TypeSpec.Builder.generateNativeInterface(sd: SparseDelegate) {
             sd.parameters.forEach {
                 if (it.type.namespace != "System" && lookUpTypeReference(it.type) is SparseInterface) {
                     addParameter(it.name, Pointer::class)
+                } else if (Marshaller.marshals.contains(it.type.asKClass())) {
+                    addParameter(it.name, Marshaller.marshals[it.type.asKClass()]!!.nativeType)
                 } else {
-                    addParameter(it.name, it.type.asClassName())
+                    addParameter(it.name, it.type.asClassName(false))
                 }
             }
             if (sd.returnType.name != "Void") {
@@ -261,7 +324,8 @@ private fun TypeSpec.Builder.generateABI(sd: SparseDelegate) {
         }.build()
         if (sd.parameterized) {
             val piidProperty = PropertySpec.builder("PIID", Guid.IID::class).apply {
-                val piid = GuidGenerator.CreateIID(sd.asTypeReference(),
+                val piid = GuidGenerator.CreateIID(
+                    sd.asTypeReference(),
                     lookUpTypeReference
                 )!!.toGuidString()
                     .filter { it.isLetterOrDigit() }

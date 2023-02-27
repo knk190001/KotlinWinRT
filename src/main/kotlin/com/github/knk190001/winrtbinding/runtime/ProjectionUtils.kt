@@ -3,6 +3,8 @@ package com.github.knk190001.winrtbinding.runtime
 import com.github.knk190001.winrtbinding.runtime.interfaces.IWinRTInterface
 import com.github.knk190001.winrtbinding.runtime.interfaces.IWinRTObject
 import com.sun.jna.*
+import com.sun.jna.platform.win32.COM.IUnknown
+import com.sun.jna.platform.win32.COM.Unknown
 import com.sun.jna.platform.win32.Guid
 import com.sun.jna.platform.win32.Win32Exception
 import com.sun.jna.platform.win32.WinDef
@@ -132,7 +134,7 @@ inline fun <A : IWinRTInterface, reified T : A> Array<A>.interfaceOfType(): T {
     throw IllegalArgumentException("No interface of type ${T::class.java.name} found in the array")
 }
 
-inline fun <reified T : IWinRTInterface, reified R : T> Array<T>.castToImpl(): Array<T> {
+inline fun <reified T : IWinRTInterface, reified R : T> Array<T?>.castToImpl(): Array<T?> {
     @Suppress("UNCHECKED_CAST")
     return this.map {
         if (it is IWinRTObject) {
@@ -140,9 +142,27 @@ inline fun <reified T : IWinRTInterface, reified R : T> Array<T>.castToImpl(): A
         } else {
             it as R
         }
-    }.toTypedArray() as Array<T>
+    }.toTypedArray() as Array<T?>
+}
+
+inline fun <reified T : IWinRTInterface, reified R : T> T.castToImpl(): R {
+    return if (this !is IWinRTObject) {
+        this as R
+    } else {
+        this.interfaces.first {
+            it is R
+        } as R
+    }
 }
 
 fun Guid.GUID.ByReference.getValue(): Guid.GUID {
     return this
 }
+
+fun Unknown.ByReference.setValue(unknown: Unknown) {
+    this.pointer = unknown.pointer
+}
+
+typealias JNAPointer = com.sun.jna.Pointer
+
+val iUnknownIID = IUnknown.IID_IUNKNOWN;

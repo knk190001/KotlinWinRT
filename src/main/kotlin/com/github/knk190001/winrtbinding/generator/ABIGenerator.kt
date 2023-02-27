@@ -54,11 +54,7 @@ fun generateProjection(): Collection<FileSpec> {
 
         }
 
-    return entities.filter {
-        it is SparseInterface && it.genericParameters == null || it !is SparseInterface
-    }.filter {
-        it is SparseDelegate && it.genericParameters == null || it !is SparseDelegate
-    }.map {
+    return entities.map {
         when (it) {
             is SparseClass -> generateClass(it, lookUp, projectInterface)
             is SparseInterface -> generateInterface(it, lookUp, projectInterface)

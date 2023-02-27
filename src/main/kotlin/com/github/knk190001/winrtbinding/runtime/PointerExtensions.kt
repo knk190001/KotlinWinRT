@@ -14,3 +14,5 @@ inline fun <reified T> Pointer.getValue(offset: Long, currentValue: T): T? {
     //    Object getValue(long offset, Class<?> type, Object currentValue) {
     return getValueFn.call(offset, T::class.java, currentValue) as T?
 }
+
+val ptr:JNAPointer = Pointer.NULL
