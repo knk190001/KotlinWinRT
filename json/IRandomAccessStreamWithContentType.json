@@ -1,9 +1,0 @@
-{
-  "Name": "IRandomAccessStreamWithContentType",
-  "Namespace": "Windows.Storage.Streams",
-  "Guid": "cc2548274b3d438f923210c76bc7e038",
-  "Methods": [],
-  "Traits": [],
-  "GenericParameters": null,
-  "Type": "Interface"
-}

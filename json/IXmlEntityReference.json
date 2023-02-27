@@ -1,9 +1,0 @@
-{
-  "Name": "IXmlEntityReference",
-  "Namespace": "Windows.Data.Xml.Dom",
-  "Guid": "2e2f47bcc3d04ccfbb860ab8c36a61cf",
-  "Methods": [],
-  "Traits": [],
-  "GenericParameters": null,
-  "Type": "Interface"
-}
