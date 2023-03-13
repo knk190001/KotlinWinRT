@@ -82,13 +82,13 @@ fun generateGenericInterfaceMethod(method: SparseMethod): FunSpec =
                     addParameter(
                         it.name,
                         Array::class.asClassName()
-                            .parameterizedBy(TypeVariableName(it.type.name).copy(true))
+                            .parameterizedBy(TypeVariableName(it.type.name))
                     )
                 } else {
                     addParameter(it.name, TypeVariableName.invoke(it.type.name))
                 }
             } else {
-                addParameter(it.name, it.type.asGenericTypeParameter(false))
+                addParameter(it.name, it.type.asGenericTypeParameter(false).copy(!it.type.isPrimitiveSystemType()))
             }
         }
         if (method.returnType.namespace == "") {
@@ -101,7 +101,7 @@ fun generateGenericInterfaceMethod(method: SparseMethod): FunSpec =
 private fun TypeSpec.Builder.addGenericSuperInterfaces(sparseInterface: SparseInterface) {
     addSuperinterface(NativeMapped::class)
     sparseInterface.superInterfaces
-        .map(SparseTypeReference::asGenericTypeParameter)
+        .map { it.asGenericTypeParameter() }
         .forEach(this::addSuperinterface)
 }
 
@@ -115,9 +115,13 @@ fun SparseTypeReference.asGenericTypeParameter(structByValue: Boolean = true): T
         ).asGenericTypeParameter(structByValue)
     }
     if (this.isArray) {
+        val nonArray = this.copy(isArray = false)
         return Array::class
             .asClassName()
-            .parameterizedBy(this.copy(isArray = false).asGenericTypeParameter(structByValue).copy(true))
+            .parameterizedBy(
+                nonArray.asGenericTypeParameter(structByValue)
+                    .copy(!nonArray.isPrimitiveSystemType())
+            )
     }
     val typeParameters = genericParameters!!.map {
         if (it.type == null) {
@@ -125,7 +129,7 @@ fun SparseTypeReference.asGenericTypeParameter(structByValue: Boolean = true): T
         } else if (it.type!!.namespace == "") {
             TypeVariableName(it.type.name)
         } else {
-            it.type.asGenericTypeParameter(structByValue)
+            it.type.asGenericTypeParameter(structByValue).copy(!it.type.isPrimitiveSystemType())
         }
     }.toList()
 
@@ -170,7 +174,8 @@ private fun TypeSpec.Builder.addTypeParameters(sparseInterface: SparseInterface)
 private fun TypeSpec.Builder.addSuperInterfaces(sparseInterface: SparseInterface) {
     addSuperinterface(NativeMapped::class)
     if (sparseInterface.genericParameters != null) {
-        addSuperinterface(sparseInterface.asTypeReference().normalize().asGenericTypeParameter(false))
+        val normalized = sparseInterface.asTypeReference().normalize()
+        addSuperinterface(normalized.asGenericTypeParameter(false))
     }
     addSuperinterface(ClassName("com.github.knk190001.winrtbinding.runtime.interfaces", "IWinRTInterface"))
     sparseInterface.superInterfaces
@@ -328,7 +333,9 @@ internal fun TypeSpec.Builder.generateByReferenceInterface(entity: SparseInterfa
     if (entity.genericParameters != null) {
         val superinterface = ClassName(entity.namespace, entity.name.replaceAfter('_', "").dropLast(1))
             .nestedClass("ByReference")
-            .parameterizedBy(entity.genericParameters!!.map { it.type!!.asGenericTypeParameter(false) })
+            .parameterizedBy(entity.genericParameters!!.map {
+                it.type!!.asGenericTypeParameter(false).copy(!it.type.isPrimitiveSystemType())
+            })
 
         addSuperinterface(superinterface)
     }
@@ -404,9 +411,12 @@ private fun TypeSpec.Builder.addMethods(
                 }
                 method.parameters.forEach {
                     if (sparseInterface.genericParameters != null) {
-                        addParameter(it.name, it.type.asGenericTypeParameter(false))
+                        addParameter(it.name,
+                            it.type.asGenericTypeParameter(false)
+                                .copy(!it.type.isPrimitiveSystemType() && !it.type.isArray)
+                        )
                     } else {
-                        addParameter(it.name, it.type.asClassName(false))
+                        addParameter(it.name, it.type.asClassName(false, nullable = !it.type.isPrimitiveSystemType()))
                     }
 
                 }
@@ -453,9 +463,14 @@ private fun CodeBlock.Builder.generateInterfaceMethodBody(
     }
 
     if (!method.returnType.isVoid()) {
+        val nullable = if (method.returnType.copy(isArray = false).isPrimitiveSystemType()) {
+            "Primitive"
+        } else {
+            ""
+        }
         if (method.returnType.isArray) {
             addStatement(
-                "val result = makeOutArray<%T>()",
+                "val result = make${nullable}OutArray<%T>()",
                 method.returnType.copy(isArray = false, isReference = false).asClassName()
             )
         } else {
@@ -486,7 +501,7 @@ private fun CodeBlock.Builder.generateInterfaceMethodBody(
 
     if (method.returnType.isArray) {
         add("val resultValue = result.array")
-        if (method.returnType.namespace != "System" && lookUpTypeReference(
+        if (!method.returnType.isSystemType() && lookUpTypeReference(
                 method.returnType.copy(
                     isArray = false,
                     isReference = false
@@ -570,6 +585,7 @@ private fun FileSpec.Builder.addImports() {
     addImport("com.github.knk190001.winrtbinding.runtime", "handleToString")
     addImport("com.github.knk190001.winrtbinding.runtime", "toHandle")
     addImport("com.github.knk190001.winrtbinding.runtime", "makeOutArray")
+    addImport("com.github.knk190001.winrtbinding.runtime", "makePrimitiveOutArray")
     addImport("com.github.knk190001.winrtbinding.runtime", "invokeHR")
     addImport("com.github.knk190001.winrtbinding.runtime", "castToImpl")
     addImport("com.github.knk190001.winrtbinding.runtime", "getValue")

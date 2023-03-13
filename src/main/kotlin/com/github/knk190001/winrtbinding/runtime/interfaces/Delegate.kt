@@ -4,6 +4,7 @@ import com.sun.jna.*
 import com.sun.jna.Structure.FieldOrder
 import com.sun.jna.platform.win32.COM.Unknown
 import com.sun.jna.platform.win32.Guid.GUID
+import com.sun.jna.platform.win32.WinDef
 import com.sun.jna.platform.win32.WinDef.UINT
 import com.sun.jna.platform.win32.WinNT.HRESULT
 import com.sun.jna.win32.StdCallLibrary.StdCallCallback
@@ -45,12 +46,12 @@ open class Delegate<T : StdCallCallback>(ptr: Pointer? = Memory(12)) : PointerTy
         unknown.addRef = IUnknownVtbl.AddRef {
             val refCount = pointer.getInt(8)
             pointer.setInt(8, refCount + 1)
-            return@AddRef HRESULT(0)
+            return@AddRef WinDef.ULONG(refCount+1L)
         }
         unknown.release = IUnknownVtbl.Release {
             val refCount = pointer.getInt(8)
             pointer.setInt(8, refCount - 1)
-            return@Release HRESULT(0)
+            return@Release WinDef.ULONG(refCount-1L)
         }
         vtbl.write()
     }

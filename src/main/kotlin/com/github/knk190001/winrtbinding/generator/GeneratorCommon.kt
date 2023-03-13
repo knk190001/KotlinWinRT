@@ -5,6 +5,7 @@ import com.github.knk190001.winrtbinding.generator.model.entities.SparseGenericP
 import com.github.knk190001.winrtbinding.generator.model.entities.SparseStruct
 import com.github.knk190001.winrtbinding.generator.model.entities.SparseTypeReference
 import com.github.knk190001.winrtbinding.runtime.CharByReference
+import com.github.knk190001.winrtbinding.runtime.interfaces.IUnknown
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.MemberName.Companion.member
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
@@ -58,29 +59,31 @@ fun SparseTypeReference.asClassName(structByValue: Boolean = true, nullable: Boo
         } else {
             Array::class.asClassName()
         }
+        val nonArrayCopy = copy(isArray = false, isReference = false)
+
         return baseClass
-            .parameterizedBy(copy(isArray = false, isReference = false).asClassName(nullable = true))
+            .parameterizedBy(nonArrayCopy.asClassName(nullable = !nonArrayCopy.isPrimitiveSystemType()))
     }
     if (nullable) {
         return asClassName(isReference).copy(true)
     }
     if (namespace == "System") {
         return when (name) {
-            "UInt32" -> WinDef.UINT::class.asClassName()
+            "Single" -> Float::class.asClassName()
             "Double" -> Double::class.asClassName()
-            "Boolean" -> Boolean::class.asClassName()
+            "Byte" -> Byte::class.asClassName()
             "Int16" -> Short::class.asClassName()
             "Int32" -> Int::class.asClassName()
+            "Int64" -> Long::class.asClassName()
+            "Char" -> Char::class.asClassName()
+            "Boolean" -> Boolean::class.asClassName()
             "Void" -> Unit::class.asClassName()
+            "UInt32" -> WinDef.UINT::class.asClassName()
             "String" -> String::class.asClassName()
             "UInt32&" -> WinDef.UINTByReference::class.asClassName()
-            "Object" -> ClassName("com.sun.jna.platform.win32.COM", "Unknown")
-            "Int64" -> Long::class.asClassName()
+            "Object" -> ClassName("com.github.knk190001.winrtbinding.runtime.interfaces", "IUnknown")
             "UInt64" -> ULONG::class.asClassName()
-            "Char" -> Char::class.asClassName()
             "UInt16" -> USHORT::class.asClassName()
-            "Single" -> Float::class.asClassName()
-            "Byte" -> Byte::class.asClassName()
             "Guid" -> Guid.GUID::class.asClassName()
             else -> throw NotImplementedError("Type: $namespace.$name is not handled")
         }
@@ -118,7 +121,7 @@ fun SparseTypeReference.asKClass(): KClass<*> {
             "String" -> String::class
             "UInt32&" -> WinDef.UINTByReference::class
             "UInt16" -> USHORT::class
-            "Object" -> Unknown::class
+            "Object" -> IUnknown::class
             "Single" -> Float::class
             "Char" -> Char::class
             "Byte" -> Byte::class
@@ -148,7 +151,7 @@ fun SparseTypeReference.byReferenceClassName(): TypeName {
             "Int64" -> LongByReference::class.asClassName()
             "Void" -> Unit::class.asClassName()
             "String" -> WinNT.HANDLEByReference::class.asClassName()
-            "Object" -> ClassName("com.sun.jna.platform.win32.COM.Unknown", "ByReference")
+            "Object" -> ClassName("com.github.knk190001.winrtbinding.runtime.interfaces.IUnknown", "ByReference")
             "Byte" -> ByteByReference::class.asClassName()
             "Guid" -> Guid.GUID.ByReference::class.asClassName()
             "Char" -> CharByReference::class.asClassName()

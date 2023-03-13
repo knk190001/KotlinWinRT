@@ -24,7 +24,7 @@ data class SparseTypeReference(
     }
 
     fun normalize(): SparseTypeReference {
-        if (!name.contains("_") && genericParameters == null||
+        if (!name.contains("_") && genericParameters == null ||
             !name.contains('`') && genericParameters == null
         ) return this
         if (this.name.contains("_")) {
@@ -79,6 +79,10 @@ data class SparseTypeReference(
     }
 
     fun isSystemType(): Boolean {
-        return namespace == "System"
+        return namespace == "System" && name != "Object"
+    }
+
+    fun isPrimitiveSystemType(): Boolean {
+        return isSystemType() && name != "String" && name != "Guid" && !isArray
     }
 }

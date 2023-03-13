@@ -110,8 +110,43 @@ class WinRTTypeMapper : DefaultTypeMapper() {
 
         }
 
+        val boxedLongConverter: TypeConverter = object : TypeConverter {
+            override fun toNative(value: Any, context: ToNativeContext): LongArray {
+                val longs = value as Array<Long>
+                return longs.toLongArray()
+            }
+
+            override fun fromNative(value: Any, context: FromNativeContext): Array<Long> {
+                val array = value as LongArray
+                return array.toTypedArray()
+            }
+
+            override fun nativeType(): Class<*>? {
+                return LongArray::class.java
+            }
+
+        }
+        val boxedFloatArrayConverter: TypeConverter = object : TypeConverter {
+            override fun toNative(value: Any, context: ToNativeContext): FloatArray {
+                val longs = value as Array<Float>
+                return longs.toFloatArray()
+            }
+
+            override fun fromNative(value: Any, context: FromNativeContext): Array<Float> {
+                val array = value as FloatArray
+                return array.toTypedArray()
+            }
+
+            override fun nativeType(): Class<*>? {
+                return FloatArray::class.java
+            }
+
+        }
+
         addTypeConverter(Boolean::class.javaPrimitiveType, booleanConverter)
         addTypeConverter(String::class.java, stringConverter)
+        addTypeConverter(Array<Long>::class.java, boxedLongConverter)
+        addTypeConverter(Array<Float>::class.java, boxedFloatArrayConverter)
 
     }
 }

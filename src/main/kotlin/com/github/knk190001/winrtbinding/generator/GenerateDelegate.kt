@@ -30,7 +30,10 @@ fun generateDelegate(
     generateProjections(sd, lookUpTypeReference, projectType)
     val delegateTypeName = ClassName(sd.namespace, sd.name)
     val delegateParameters = sd.parameters.map {
-        ParameterSpec.builder(it.name, it.type.asClassName(false)).build()
+        ParameterSpec.builder(
+            it.name,
+            it.type.asClassName(false).copy(!it.type.isPrimitiveSystemType() && !it.type.isArray)
+        ).build()
     }
     val delegateBodyTypeName = LambdaTypeName.get(delegateTypeName, delegateParameters, sd.returnType.asClassName())
 
@@ -43,7 +46,9 @@ fun generateDelegate(
     val delegateClass = TypeSpec.classBuilder(sd.name).apply {
         superclass(superClassName)
         if (sd.genericParameters != null) {
-            addSuperinterface(sd.asTypeReference().normalize().dropGenericParameterCount().asGenericTypeParameter(false))
+            addSuperinterface(
+                sd.asTypeReference().normalize().dropGenericParameterCount().asGenericTypeParameter(false)
+            )
         }
         generateConstructor()
         generateCompanion(sd, delegateTypeName)
@@ -66,7 +71,7 @@ fun generateGenericDelegateInterface(sd: SparseDelegate): FileSpec {
                     if (it.type.namespace == "") {
                         addParameter(it.name, TypeVariableName(it.type.name))
                     } else {
-                        addParameter(it.name, it.type.asGenericTypeParameter())
+                        addParameter(it.name, it.type.asGenericTypeParameter().copy(!it.type.isPrimitiveSystemType()))
                     }
                 }
                 returns(sd.returnType.asGenericTypeParameter())
@@ -99,7 +104,10 @@ fun TypeSpec.Builder.generateInvokeFunction(sd: SparseDelegate) {
             addModifiers(KModifier.OVERRIDE)
         }
         sd.parameters.forEach {
-            addParameter(it.name, it.type.asGenericTypeParameter(false))
+            addParameter(
+                it.name, it.type.asGenericTypeParameter(false)
+                    .copy(!it.type.isPrimitiveSystemType() && !it.type.isArray)
+            )
         }
         val cb = CodeBlock.builder().apply {
             if (sd.returnType.name != "Void") {
@@ -123,7 +131,7 @@ fun TypeSpec.Builder.generateInvokeFunction(sd: SparseDelegate) {
                 if (sd.parameters[idx].type.namespace != "System" &&
                     lookUpTypeReference(sd.parameters[idx].type) is SparseInterface
                 ) {
-                    "$name.toNative() as Pointer"
+                    "$name?.toNative() as Pointer"
                 } else {
                     name
                 }
@@ -178,11 +186,14 @@ private fun TypeSpec.Builder.generateCompanion(
                             it.type
                         ) is SparseInterface
                     ) {
-                        addStatement("${it.name}: %T,", Pointer::class)
+                        addStatement("${it.name}: %T,", Pointer::class.asClassName().copy(true))
                     } else if (Marshaller.marshals.contains(it.type.asKClass())) {
                         addStatement("${it.name}: %T,", Marshaller.marshals[it.type.asKClass()]!!.nativeType)
                     } else {
-                        addStatement("${it.name}: %T,", it.type.asClassName(false))
+                        addStatement(
+                            "${it.name}: %T,",
+                            it.type.asClassName(false).copy(!it.type.isPrimitiveSystemType() && !it.type.isArray)
+                        )
                     }
                 }
                 if (sd.returnType.name != "Void") {
@@ -216,7 +227,10 @@ private fun TypeSpec.Builder.generateCompanion(
                         Marshaller.marshals.getOrDefault(sd.returnType.asKClass(), Marshaller.default)
                             .generateToNativeMarshalCode("result")
                     add(marshalledReturnValue.second)
-                    if (!sd.returnType.isSystemType() && lookUpTypeReference(sd.returnType) is SparseInterface) {
+
+                    if (!sd.returnType.isSystemType() && sd.returnType.name == "Object") {
+                        addStatement("retVal.setValue(${marshalledReturnValue.first}.castToImpl())")
+                    } else if (!sd.returnType.isSystemType() && lookUpTypeReference(sd.returnType) is SparseInterface) {
                         addStatement("retVal.setValue(${marshalledReturnValue.first}.castToImpl())")
                     } else {
                         addStatement("retVal.setValue(${marshalledReturnValue.first})")
@@ -268,7 +282,10 @@ private fun TypeSpec.Builder.generateNativeInterface(sd: SparseDelegate) {
                 } else if (Marshaller.marshals.contains(it.type.asKClass())) {
                     addParameter(it.name, Marshaller.marshals[it.type.asKClass()]!!.nativeType)
                 } else {
-                    addParameter(it.name, it.type.asClassName(false))
+                    addParameter(
+                        it.name,
+                        it.type.asClassName(false).copy(!it.type.isPrimitiveSystemType() && !it.type.isArray)
+                    )
                 }
             }
             if (sd.returnType.name != "Void") {
