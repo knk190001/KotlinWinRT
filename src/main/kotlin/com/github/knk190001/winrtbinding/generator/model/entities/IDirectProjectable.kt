@@ -9,5 +9,4 @@ interface IDirectProjectable<T : IDirectProjectable<T>> : INamedEntity {
     fun withName(newName: String): T
     fun withProjectedName(): T
 
-    fun asTypeReference(): SparseTypeReference
 }

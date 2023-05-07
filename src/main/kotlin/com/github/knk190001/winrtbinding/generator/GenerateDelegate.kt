@@ -4,6 +4,9 @@ import com.github.knk190001.winrtbinding.generator.model.entities.IDirectProject
 import com.github.knk190001.winrtbinding.generator.model.entities.SparseDelegate
 import com.github.knk190001.winrtbinding.generator.model.entities.SparseGenericParameter
 import com.github.knk190001.winrtbinding.generator.model.entities.SparseInterface
+import com.github.knk190001.winrtbinding.runtime.GenericType
+import com.github.knk190001.winrtbinding.runtime.IByReference
+import com.github.knk190001.winrtbinding.runtime.WinRTByReference
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.jvm.jvmOverloads
@@ -32,10 +35,10 @@ fun generateDelegate(
     val delegateParameters = sd.parameters.map {
         ParameterSpec.builder(
             it.name,
-            it.type.asClassName(false).copy(!it.type.isPrimitiveSystemType() && !it.type.isArray)
+            it.type.asGenericTypeParameter(false).copy(!it.type.isPrimitiveSystemType() && !it.type.isArray)
         ).build()
     }
-    val delegateBodyTypeName = LambdaTypeName.get(delegateTypeName, delegateParameters, sd.returnType.asClassName())
+    val delegateBodyTypeName = LambdaTypeName.get(delegateTypeName, delegateParameters, sd.returnType.asGenericTypeParameter(false))
 
     val superClassName = ClassName("com.github.knk190001.winrtbinding.runtime.interfaces", "Delegate")
         .parameterizedBy(delegateTypeName.nestedClass("Native"))
@@ -44,8 +47,10 @@ fun generateDelegate(
     addTypeAlias(delegateBodySpec)
 
     val delegateClass = TypeSpec.classBuilder(sd.name).apply {
+        addSignatureAnnotation(sd)
         superclass(superClassName)
         if (sd.genericParameters != null) {
+            addAnnotation(GenericType::class)
             addSuperinterface(
                 sd.asTypeReference().normalize().dropGenericParameterCount().asGenericTypeParameter(false)
             )
@@ -64,6 +69,7 @@ fun generateGenericDelegateInterface(sd: SparseDelegate): FileSpec {
     return FileSpec.builder(sd.namespace, sd.name).apply {
         val delegateSpec = TypeSpec.interfaceBuilder(sd.name).apply {
             addTypeParameters(sd)
+            addGuidAnnotation(sd.guid)
             addSuperinterface(NativeMapped::class)
             val invokeSpec = FunSpec.builder("invoke").apply {
                 addModifiers(KModifier.ABSTRACT)
@@ -192,7 +198,7 @@ private fun TypeSpec.Builder.generateCompanion(
                     } else {
                         addStatement(
                             "${it.name}: %T,",
-                            it.type.asClassName(false).copy(!it.type.isPrimitiveSystemType() && !it.type.isArray)
+                            it.type.asGenericTypeParameter(false).copy(!it.type.isPrimitiveSystemType() && !it.type.isArray)
                         )
                     }
                 }
@@ -212,16 +218,19 @@ private fun TypeSpec.Builder.generateCompanion(
                 if (sd.returnType.name != "Void") {
                     add("val result = fn(thisObj, ")
 //                    add(marshalledNames.joinToString())
+                    val parameters = mutableListOf<Any>()
                     add(marshalledNames.mapIndexed { idx, name ->
                         if (sd.parameters[idx].type.namespace != "System" && lookUpTypeReference(
                                 sd.parameters[idx].type
                             ) is SparseInterface
                         ) {
-                            "${sd.parameters[idx].type.getProjectedName()}.ABI.make${sd.parameters[idx].type.getProjectedName()}(${sd.parameters[idx].name})"
+                            parameters += sd.parameters[idx].type.asClassName()
+                            parameters += sd.parameters[idx].type.asGenericTypeParameter()
+                            "$%T.make%T(${sd.parameters[idx].name})"
                         } else {
                             name
                         }
-                    }.joinToString())
+                    }.joinToString(), *parameters.toTypedArray())
                     add(")\n")
                     val marshalledReturnValue =
                         Marshaller.marshals.getOrDefault(sd.returnType.asKClass(), Marshaller.default)
@@ -238,16 +247,19 @@ private fun TypeSpec.Builder.generateCompanion(
                 } else {
                     add("fn(thisObj, ")
 //                    add(marshalledNames.joinToString())
+                    val parameters = mutableListOf<Any>()
                     add(marshalledNames.mapIndexed { idx, name ->
                         if (sd.parameters[idx].type.namespace != "System" && lookUpTypeReference(
                                 sd.parameters[idx].type
                             ) is SparseInterface
                         ) {
-                            "${sd.parameters[idx].type.getProjectedName()}.ABI.make${sd.parameters[idx].type.getProjectedName()}(${sd.parameters[idx].name})"
+                            parameters += sd.parameters[idx].type.asClassName()
+                            parameters += sd.parameters[idx].type.asGenericTypeParameter()
+                            "%T.ABI.make%T(${sd.parameters[idx].name})"
                         } else {
                             name
                         }
-                    }.joinToString())
+                    }.joinToString(), *parameters.toTypedArray())
                     add(")\n")
                 }
                 addStatement("%T(0)", HRESULT::class)
@@ -314,12 +326,20 @@ private fun generateProjections(
 }
 
 private fun TypeSpec.Builder.generateByReference(sd: SparseDelegate) {
+    val brAnnotationSpec = AnnotationSpec.builder(WinRTByReference::class)
+        .addMember("brClass = %L.ByReference::class", sd.name)
+        .build()
+    addAnnotation(brAnnotationSpec)
+
     val delegateTypeName = ClassName(sd.namespace, sd.name)
     val byReference = TypeSpec.classBuilder("ByReference").apply {
+        addSuperinterface(IByReference::class.asClassName().parameterizedBy(ClassName("",sd.name)))
+
         superclass(ByReference::class)
         val memberName = MemberName(Native::class.asClassName(), "POINTER_SIZE")
         addSuperclassConstructorParameter("%M", memberName)
         val getValueSpec = FunSpec.builder("getValue").apply {
+            addModifiers(KModifier.OVERRIDE)
             addCode("return %T(pointer.getPointer(0))", delegateTypeName)
             returns(delegateTypeName)
         }.build()

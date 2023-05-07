@@ -36,10 +36,16 @@ data class SparseTypeReference(
         return this
     }
 
+    fun isClosed(): Boolean {
+        return genericParameters == null || genericParameters.all {
+            it.type != null && !it.type.isTypeParameter() && it.type.isClosed()
+        }
+    }
+
     fun hasActualizedGenericParameter(): Boolean {
         if (genericParameters == null) return false
         return genericParameters.none {
-            it.type == null
+            it.type == null || it.type.namespace == ""
         }
     }
 
@@ -84,5 +90,9 @@ data class SparseTypeReference(
 
     fun isPrimitiveSystemType(): Boolean {
         return isSystemType() && name != "String" && name != "Guid" && !isArray
+    }
+
+    fun isTypeParameter(): Boolean {
+        return namespace.isEmpty()
     }
 }

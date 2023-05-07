@@ -5,4 +5,8 @@ interface INamedEntity {
     val namespace:String
 
     fun fullName()= "$namespace.$name"
+
+    fun asTypeReference(): SparseTypeReference {
+        return SparseTypeReference(name, namespace, null, false, false)
+    }
 }

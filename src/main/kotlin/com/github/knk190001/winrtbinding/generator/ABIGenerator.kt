@@ -5,6 +5,10 @@ import com.beust.klaxon.Klaxon
 import com.beust.klaxon.Parser
 import com.github.knk190001.winrtbinding.generator.model.entities.*
 import com.squareup.kotlinpoet.*
+import kotlinx.coroutines.InternalCoroutinesApi
+import kotlinx.coroutines.internal.synchronized
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.io.InvalidObjectException
 import kotlin.io.path.Path
 import kotlin.io.path.forEachDirectoryEntry
@@ -16,12 +20,21 @@ typealias  LookUp = (SparseTypeReference) -> SparseEntity
 typealias ProjectInterface = (IDirectProjectable<*>, List<SparseGenericParameter>) -> Unit
 
 lateinit var lookUpTypeReference: LookUp
+lateinit var projectType: ProjectInterface
 
-
+@OptIn(InternalCoroutinesApi::class)
 fun generateProjection(): Collection<FileSpec> {
     val jsonObjects = mutableListOf<JsonObject>()
-    Path("${System.getProperty("user.dir")}/json").forEachDirectoryEntry {
-        jsonObjects.add(Parser.default().parse(it.inputStream()) as JsonObject)
+    runBlocking {
+
+        Path("${System.getProperty("user.dir")}/json").forEachDirectoryEntry {
+            launch {
+                val json = Parser.default().parse(it.inputStream())
+                synchronized(jsonObjects){
+                    jsonObjects.add(json as JsonObject)
+                }
+            }
+        }
     }
 
     val entities = jsonObjects.map {
@@ -29,17 +42,16 @@ fun generateProjection(): Collection<FileSpec> {
         Klaxon().parse<SparseEntity>(it.toJsonString())
     }.filterNotNull()
 
+    val entityMap = entities.associateBy { it.fullName() }
+
     val lookUp: LookUp = { typeReference ->
         val tr = typeReference.normalize()
         println(typeReference.fullName())
-        if(entities.none {
-                tr.equals(it)
-            }) {
+        if(entityMap[tr.fullName()] == null) {
             println("Not found: ${tr.fullName()}")
+            throw IllegalArgumentException("Entity not found: ${tr.fullName()}")
         }
-        entities.first {
-            tr.equals(it)
-        }
+        entityMap[tr.fullName()]!!
     }
     lookUpTypeReference = lookUp
 
@@ -47,13 +59,16 @@ fun generateProjection(): Collection<FileSpec> {
     val projectInterface: (IDirectProjectable<*>, Collection<SparseGenericParameter>) -> Unit =
         { projectable: IDirectProjectable<*>, genericParameters: Collection<SparseGenericParameter> ->
             if (projections.none {
-                    isProjectionEquivalent(it, projectable to genericParameters)
-                }) {
-                projections.add(projectable to genericParameters)
+                    isProjectionEquivalent(
+                        it,
+                        Pair(projectable, genericParameters)
+                    )
+                } ) {
+                projections.add(Pair(projectable, genericParameters))
             }
-
         }
 
+    projectType = projectInterface
     return entities.map {
         when (it) {
             is SparseClass -> generateClass(it, lookUp, projectInterface)
@@ -64,11 +79,15 @@ fun generateProjection(): Collection<FileSpec> {
 
             else -> throw InvalidObjectException("Object is not of type sparse class or sparse interface.")
         }
-    }.toMutableList().apply {
-        addAll(generateProjectedTypes(projections, lookUp) { projectable, parameters ->
-            projections.contains(projectable to parameters)
-        })
-    }
+    } + generateProjectedTypes(projections, lookUp, checkIfExists = { projectable, genericParameters ->
+        //Using projections check if the projected type already exists
+        projections.any {
+            isProjectionEquivalent(
+                it,
+                Pair(projectable, genericParameters)
+            )
+        }
+    })
 }
 
 private fun isProjectionEquivalent(
@@ -116,6 +135,8 @@ private fun generateProjectedTypes(
                 distinctProjections.containsProjection(sInterface, params) || checkIfExists(sInterface, params)
             })
         }
+    }.filter {
+        it.tag<InvisibleInterface>() == null
     }
 }
 

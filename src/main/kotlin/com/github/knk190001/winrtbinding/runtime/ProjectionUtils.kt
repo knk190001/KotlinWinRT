@@ -17,6 +17,8 @@ import com.sun.jna.win32.StdCallLibrary
 import kotlin.Any
 import kotlin.Int
 import kotlin.String
+import kotlin.reflect.KType
+import kotlin.reflect.KTypeProjection
 import com.sun.jna.Function as JnaFunction
 
 val WinRT = JNAApiInterface.INSTANCE
