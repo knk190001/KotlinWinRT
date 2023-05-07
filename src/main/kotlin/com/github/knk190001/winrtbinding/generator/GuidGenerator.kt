@@ -108,8 +108,9 @@ object GuidGenerator {
                 this.isSystemType("UInt64")
     }
 
-    private fun String.guidToSignatureFormat(): String {
-        return GUID.fromString(this).toGuidString().lowercase()
-    }
 
+
+}
+fun String.guidToSignatureFormat(): String {
+    return GUID.fromString(this).toGuidString().lowercase()
 }

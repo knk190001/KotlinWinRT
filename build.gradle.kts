@@ -1,5 +1,8 @@
+import org.gradle.jvm.toolchain.JvmVendorSpec
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
-    kotlin("jvm") version "1.6.21"
+    kotlin("jvm") version "1.8.21"
     java
     `maven-publish`
 }
@@ -12,15 +15,26 @@ repositories {
 }
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(16))
+        vendor.set(JvmVendorSpec.ADOPTIUM)
+        languageVersion.set(JavaLanguageVersion.of(19))
     }
 }
+
+kotlin {
+    sourceSets.all {
+        languageSettings {
+            languageVersion = "2.0"
+        }
+    }
+}
+
 
 dependencies {
     implementation(kotlin("stdlib"))
     api("com.squareup:kotlinpoet:1.12.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
-    implementation("org.jetbrains.kotlin:kotlin-reflect:1.6.21")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.21")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
     api("net.java.dev.jna:jna:5.12.1")
     api("net.java.dev.jna:jna-platform:5.12.1")
     implementation("com.47deg:memeid:0.7.0")
@@ -51,3 +65,7 @@ publishing {
     }
 }
 
+tasks.withType<KotlinCompile>(){
+    kotlinOptions.jvmTarget = "19"
+//    jvmTarget = "19"
+}

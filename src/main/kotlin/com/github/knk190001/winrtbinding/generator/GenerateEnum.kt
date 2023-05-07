@@ -6,10 +6,13 @@ import com.sun.jna.FromNativeContext
 import com.sun.jna.NativeMapped
 import com.sun.jna.ptr.ByReference
 import com.github.knk190001.winrtbinding.generator.model.entities.SparseEnum
+import com.github.knk190001.winrtbinding.runtime.IByReference
+import com.github.knk190001.winrtbinding.runtime.WinRTByReference
 
 fun generateEnum(sEnum : SparseEnum): FileSpec {
     val fileSpec = FileSpec.builder(sEnum.namespace, sEnum.name)
     val type = TypeSpec.enumBuilder(sEnum.name).apply {
+        addSignatureAnnotation(sEnum)
         addSuperinterface(NativeMapped::class)
         primaryConstructor(
             FunSpec.constructorBuilder().apply {
@@ -58,8 +61,14 @@ fun generateEnum(sEnum : SparseEnum): FileSpec {
             addCode("return %T::class.java",Integer::class.java)
         }.build()
 
+        val brAnnotationSpec = AnnotationSpec.builder(WinRTByReference::class)
+            .addMember("brClass = %L.ByReference::class", sEnum.name)
+            .build()
+        addAnnotation(brAnnotationSpec)
+
         val byRefSpec = TypeSpec.classBuilder("ByReference").apply {
             superclass(ByReference::class)
+            addSuperinterface(IByReference::class.asClassName().parameterizedBy(ClassName("",sEnum.name)))
             addSuperclassConstructorParameter("4")
             val setValueSpec = FunSpec.builder("setValue").apply {
                 addParameter("newValue",ClassName(sEnum.namespace,sEnum.name))
@@ -67,6 +76,7 @@ fun generateEnum(sEnum : SparseEnum): FileSpec {
             }.build()
 
             val getValueSpec = FunSpec.builder("getValue").apply {
+                addModifiers(KModifier.OVERRIDE)
                 returns(ClassName(sEnum.namespace,sEnum.name))
                 addCode("return ${sEnum.name}.values()[0].fromNative(this.pointer.getInt(0), null)")
             }.build()

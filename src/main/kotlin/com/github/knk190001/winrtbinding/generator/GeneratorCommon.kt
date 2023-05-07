@@ -1,10 +1,11 @@
 package com.github.knk190001.winrtbinding.generator
 
-import com.github.knk190001.winrtbinding.generator.model.entities.INamedEntity
-import com.github.knk190001.winrtbinding.generator.model.entities.SparseGenericParameter
-import com.github.knk190001.winrtbinding.generator.model.entities.SparseStruct
-import com.github.knk190001.winrtbinding.generator.model.entities.SparseTypeReference
+import com.github.knk190001.winrtbinding.generator.model.entities.*
 import com.github.knk190001.winrtbinding.runtime.CharByReference
+import com.github.knk190001.winrtbinding.runtime.IByReference
+import com.github.knk190001.winrtbinding.runtime.Signature
+import com.github.knk190001.winrtbinding.runtime.WinRTByReference
+import com.github.knk190001.winrtbinding.runtime.interfaces.IUnknown
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.MemberName.Companion.member
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
@@ -32,8 +33,8 @@ internal fun TypeSpec.Builder.generateByReferenceType(
     addSuperclassConstructorParameter("%M", ptrSize)
 
     val getValueSpec = FunSpec.builder("getValue").apply {
+        addModifiers(KModifier.OVERRIDE)
         addCode("return %T(pointer.getPointer(0))", className)
-//        returns(className)
     }.build()
     addFunction(getValueSpec)
 
@@ -45,7 +46,12 @@ internal fun TypeSpec.Builder.generateByReferenceType(
 }
 
 internal fun TypeSpec.Builder.addByReferenceType(entity: INamedEntity) {
+    val brAnnotationSpec = AnnotationSpec.builder(WinRTByReference::class)
+        .addMember("brClass = %L.ByReference::class", entity.name)
+        .build()
+    addAnnotation(brAnnotationSpec)
     val byReference = TypeSpec.classBuilder("ByReference").apply {
+        addSuperinterface(IByReference::class.asClassName().parameterizedBy(ClassName("",entity.name)))
         generateByReferenceType(entity)
     }.build()
     addType(byReference)
@@ -58,43 +64,44 @@ fun SparseTypeReference.asClassName(structByValue: Boolean = true, nullable: Boo
         } else {
             Array::class.asClassName()
         }
+        val nonArrayCopy = copy(isArray = false, isReference = false)
+
         return baseClass
-            .parameterizedBy(copy(isArray = false, isReference = false).asClassName(nullable = true))
+            .parameterizedBy(nonArrayCopy.asClassName(nullable = !nonArrayCopy.isPrimitiveSystemType()))
     }
     if (nullable) {
         return asClassName(isReference).copy(true)
     }
     if (namespace == "System") {
         return when (name) {
-            "UInt32" -> WinDef.UINT::class.asClassName()
+            "Single" -> Float::class.asClassName()
             "Double" -> Double::class.asClassName()
-            "Boolean" -> Boolean::class.asClassName()
+            "Byte" -> Byte::class.asClassName()
             "Int16" -> Short::class.asClassName()
             "Int32" -> Int::class.asClassName()
+            "Int64" -> Long::class.asClassName()
+            "Char" -> Char::class.asClassName()
+            "Boolean" -> Boolean::class.asClassName()
             "Void" -> Unit::class.asClassName()
+            "UInt32" -> WinDef.UINT::class.asClassName()
             "String" -> String::class.asClassName()
             "UInt32&" -> WinDef.UINTByReference::class.asClassName()
-            "Object" -> ClassName("com.sun.jna.platform.win32.COM", "Unknown")
-            "Int64" -> Long::class.asClassName()
+            "Object" -> ClassName("com.github.knk190001.winrtbinding.runtime.interfaces", "IUnknown")
             "UInt64" -> ULONG::class.asClassName()
-            "Char" -> Char::class.asClassName()
             "UInt16" -> USHORT::class.asClassName()
-            "Single" -> Float::class.asClassName()
-            "Byte" -> Byte::class.asClassName()
             "Guid" -> Guid.GUID::class.asClassName()
             else -> throw NotImplementedError("Type: $namespace.$name is not handled")
         }
     }
     if (this.isReference) {
         if (genericParameters != null) {
-            val name = getProjectedName()
-            return ClassName(name, "ByReference")
+//            val name = getProjectedName()
+            return ClassName(dropGenericParameterCount().name, "ByReference")
         }
         return ClassName(fullName(), "ByReference")
     }
     if (genericParameters != null) {
-        val name = getProjectedName()
-        return ClassName(this.namespace, name)
+        return ClassName(this.namespace, cleanName())
     }
 
     if (lookUpTypeReference(this) is SparseStruct && structByValue) {
@@ -118,7 +125,7 @@ fun SparseTypeReference.asKClass(): KClass<*> {
             "String" -> String::class
             "UInt32&" -> WinDef.UINTByReference::class
             "UInt16" -> USHORT::class
-            "Object" -> Unknown::class
+            "Object" -> IUnknown::class
             "Single" -> Float::class
             "Char" -> Char::class
             "Byte" -> Byte::class
@@ -148,7 +155,7 @@ fun SparseTypeReference.byReferenceClassName(): TypeName {
             "Int64" -> LongByReference::class.asClassName()
             "Void" -> Unit::class.asClassName()
             "String" -> WinNT.HANDLEByReference::class.asClassName()
-            "Object" -> ClassName("com.sun.jna.platform.win32.COM.Unknown", "ByReference")
+            "Object" -> ClassName("com.github.knk190001.winrtbinding.runtime.interfaces.IUnknown", "ByReference")
             "Byte" -> ByteByReference::class.asClassName()
             "Guid" -> Guid.GUID.ByReference::class.asClassName()
             "Char" -> CharByReference::class.asClassName()
@@ -156,12 +163,28 @@ fun SparseTypeReference.byReferenceClassName(): TypeName {
         }
     }
     if (genericParameters != null) {
-        val name = getProjectedName()
-        return ClassName("${this.namespace}.$name", "ByReference")
+        val name = dropGenericParameterCount().name
+        val typeParameters = genericParameters?.map { it.type!!.asGenericTypeParameter().copy(!it.type.isPrimitiveSystemType()) }?: emptyList()
+        return ClassName("${this.namespace}.$name", "ByReference").parameterizedBy(typeParameters)
     }
 
     return ClassName(this.namespace + ".${this.name}", "ByReference")
 }
+
+fun TypeSpec.Builder.addSignatureAnnotation(sparseInterface: INamedEntity) {
+    val annotation = AnnotationSpec.builder(Signature::class).apply {
+        addMember("%S", GuidGenerator.getSignature(sparseInterface.asTypeReference(), lookUpTypeReference))
+    }.build()
+    addAnnotation(annotation)
+}
+
+fun TypeSpec.Builder.addGuidAnnotation(guid: String) {
+    val annotation = AnnotationSpec.builder(com.github.knk190001.winrtbinding.runtime.Guid::class).apply {
+        addMember("%S", guid)
+    }.build()
+    addAnnotation(annotation)
+}
+
 
 //val reservedWords = listOf("as","break","class","continue","do","else","false","for","fun","if","in","interface","null","object","package","return", "super", "this","throw", "true", "try", "tyoe")
 val reservedWords = listOf("package", "object")

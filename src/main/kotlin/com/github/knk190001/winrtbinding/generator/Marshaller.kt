@@ -1,6 +1,8 @@
 package com.github.knk190001.winrtbinding.generator
 
+import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
+import com.squareup.kotlinpoet.asClassName
 import com.sun.jna.platform.win32.WinNT.HANDLE
 import kotlin.reflect.KClass
 
@@ -17,18 +19,18 @@ interface IMarshalGenerator {
     fun generateToNativeMarshalCode(varName: String): Pair<String, CodeBlock>
     fun generateFromNativeMarshalCode(varName: String): Pair<String, CodeBlock>
 
-    val nativeType: KClass<*>
+    val nativeType: ClassName
     val managedType: KClass<*>
 }
 
 class StringMarshalGenerator: IMarshalGenerator {
-    override val nativeType = HANDLE::class
+    override val nativeType = HANDLE::class.asClassName()
     override val managedType = String::class
 
     override fun generateToNativeMarshalCode(varName: String): Pair<String, CodeBlock> {
         val cb = CodeBlock.builder()
         cb.apply {
-            addStatement("val ${varName}_Native = $varName.toHandle()")
+            addStatement("val ${varName}_Native = $varName!!.toHandle()")
         }
         return "${varName}_Native" to cb.build()
     }
@@ -43,7 +45,7 @@ class StringMarshalGenerator: IMarshalGenerator {
 }
 
 class BooleanMarshalGenerator: IMarshalGenerator {
-    override val nativeType = Byte::class
+    override val nativeType = Byte::class.asClassName()
     override val managedType = Boolean::class
     override fun generateToNativeMarshalCode(varName: String): Pair<String, CodeBlock> {
         val cb = CodeBlock.builder()
@@ -65,7 +67,7 @@ class BooleanMarshalGenerator: IMarshalGenerator {
 
 class IdentityMarshalGenerator : IMarshalGenerator {
     override val managedType = Any::class
-    override val nativeType = Any::class
+    override val nativeType = Any::class.asClassName()
 
     override fun generateToNativeMarshalCode(varName: String): Pair<String, CodeBlock> {
         return varName to CodeBlock.of("")
