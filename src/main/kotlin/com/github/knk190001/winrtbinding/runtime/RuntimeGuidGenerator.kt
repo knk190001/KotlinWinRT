@@ -67,7 +67,7 @@ object RuntimeGuidGenerator {
                 }
 
                 return "pinterface(${type.annotationOfType<GuidAnnotation>()!!.guid.guidToSignatureFormat()};${
-                    type.arguments.map { getSignature(it.type!!) }.joinToString(";")
+                    type.arguments.joinToString(";") { getSignature(it.type!!) }
                 })"
             }
             if (type.isSubtypeOf(typeOf<Delegate<*>>())) {

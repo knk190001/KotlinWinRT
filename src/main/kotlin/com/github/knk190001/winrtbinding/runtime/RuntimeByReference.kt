@@ -23,10 +23,6 @@ import kotlin.reflect.typeOf
 interface IByReference<T> {
     fun getPointer(): Pointer
     fun getValue(): T
-
-    operator fun get(index: Int): T {
-         
-    }
 }
 
 interface ISpecializable {
@@ -38,9 +34,7 @@ inline fun <reified T> makeByReferenceType(): IByReference<T> {
 }
 
 @Suppress("UNCHECKED_CAST")
-@OptIn(ExperimentalStdlibApi::class)
 fun <T> makeByReferenceType(type: KType): IByReference<T> {
-
     val brtAnnotation = type.annotationOfType<WinRTByReference>()
     if (brtAnnotation == null) {
         return when (type.classifier) {

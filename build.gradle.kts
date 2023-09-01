@@ -28,6 +28,13 @@ kotlin {
     }
 }
 
+tasks.withType<KotlinCompile> {
+    kotlinOptions {
+        jvmTarget = "19"
+        freeCompilerArgs = listOf("-Xjvm-default=all-compatibility", "-Xallow-jvm-ir-dependencies")
+    }
+}
+
 
 dependencies {
     implementation(kotlin("stdlib"))

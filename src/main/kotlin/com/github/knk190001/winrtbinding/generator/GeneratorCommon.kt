@@ -95,7 +95,6 @@ fun SparseTypeReference.asClassName(structByValue: Boolean = true, nullable: Boo
     }
     if (this.isReference) {
         if (genericParameters != null) {
-//            val name = getProjectedName()
             return ClassName(dropGenericParameterCount().name, "ByReference")
         }
         return ClassName(fullName(), "ByReference")
@@ -111,29 +110,49 @@ fun SparseTypeReference.asClassName(structByValue: Boolean = true, nullable: Boo
 }
 
 fun SparseTypeReference.asKClass(): KClass<*> {
-    if (isArray) return Nothing::class
+    if (isArray) return WinRTTypeVariable::class
+    if(namespace.isEmpty()) return Nothing::class
     if (namespace == "System") {
-        return when (name) {
-            "UInt32" -> WinDef.UINT::class
-            "UInt64" -> ULONG::class
-            "Double" -> Double::class
-            "Boolean" -> Boolean::class
-            "Int16" -> Short::class
-            "Int32" -> Int::class
-            "Int64" -> Long::class
-            "Void" -> Unit::class
-            "String" -> String::class
-            "UInt32&" -> WinDef.UINTByReference::class
-            "UInt16" -> USHORT::class
-            "Object" -> IUnknown::class
-            "Single" -> Float::class
-            "Char" -> Char::class
-            "Byte" -> Byte::class
-            "Guid" -> Guid.GUID::class
-            else -> throw NotImplementedError("Type: $namespace.$name is not handled")
+        when (name) {
+            "UInt32" -> return WinDef.UINT::class
+            "UInt64" -> return ULONG::class
+            "Double" -> return Double::class
+            "Boolean" -> return Boolean::class
+            "Int16" -> return Short::class
+            "Int32" -> return Int::class
+            "Int64" -> return Long::class
+            "Void" -> return Unit::class
+            "String" -> return String::class
+            "UInt32&" -> return WinDef.UINTByReference::class
+            "UInt16" -> return USHORT::class
+            "Object" -> return IUnknown::class
+            "Single" -> return Float::class
+            "Char" -> return Char::class
+            "Byte" -> return Byte::class
+            "Guid" -> return Guid.GUID::class
         }
     }
-    return Nothing::class
+
+    return when (lookUpTypeReference(this)) {
+        is SparseClass -> WinRTClass::class
+        is SparseInterface -> {
+            if (genericParameters != null) {
+                WinRTGenericInterface::class
+            } else {
+                WinRTInterface::class
+            }
+        }
+        is SparseDelegate -> {
+            if (genericParameters != null) {
+                WinRTGenericDelegate::class
+            } else {
+                WinRTDelegate::class
+            }
+        }
+        is SparseEnum -> WinRTEnum::class
+        is SparseStruct -> WinRTStruct::class
+        else -> Nothing::class
+    }
 }
 
 fun SparseTypeReference.byReferenceClassName(): TypeName {

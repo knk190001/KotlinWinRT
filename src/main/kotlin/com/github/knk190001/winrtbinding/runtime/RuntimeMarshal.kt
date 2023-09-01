@@ -35,6 +35,10 @@ fun <T> marshalFromNative(t: Any?, type: KType): T? {
     if (type.isMarkedNullable) {
         return marshalFromNative(t, type.withNullability(false)) as T?
     }
+    if (t is ISpecializable) {
+        t.specialize(type)
+        return marshalFromNative<T>(t, type)
+    }
     @Suppress("UNCHECKED_CAST")
     val marshal: Marshal<*, Any> = marshals.singleOrNull {
         type == it.fromType

@@ -7,7 +7,6 @@ import com.github.knk190001.winrtbinding.runtime.interfaces.IWinRTInterface
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.MemberName.Companion.member
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.sun.jna.CallbackReference
 import com.sun.jna.Function
 import com.sun.jna.Native
 import com.sun.jna.NativeMapped
@@ -244,14 +243,14 @@ private fun TypeSpec.Builder.generateParameterizedImplType(sparseInterface: Spar
         addParameterizedSuperInterfaces(sparseInterface)
 
 
-        if (sparseInterface.genericParameters != null) {
-            val specializeSpec = FunSpec.builder("specialize").apply {
-                addParameter("type", KType::class)
-                addCode("${sparseInterface.typeName()} = type")
-                addModifiers(KModifier.OVERRIDE)
-            }.build()
-            addFunction(specializeSpec)
-        }
+//        if (sparseInterface.genericParameters != null) {
+//            val specializeSpec = FunSpec.builder("specialize").apply {
+//                addParameter("type", KType::class)
+//                addCode("${sparseInterface.typeName()} = type")
+//                addModifiers(KModifier.OVERRIDE)
+//            }.build()
+//            addFunction(specializeSpec)
+//        }
 
 
         addParameterizedImplCompanion(sparseInterface)
@@ -327,15 +326,7 @@ private fun TypeSpec.Builder.addParameterizedSuperInterfaceTypeParameter(
 
 private fun TypeSpec.Builder.addParameterizedSuperInterfaces(sparseInterface: SparseInterface) {
     addSuperinterface(sparseInterface.asTypeReference().asGenericTypeParameter())
-
-//    val superInterfaces = traverseSuperInterfaces(sparseInterface)
-//    superInterfaces.forEach {
-//        if (it.isClosed()) return@forEach
-//        val typeReference = it.asGenericTypeParameter()
-//        addSuperinterface(typeReference)
-//    }
-
-    if (sparseInterface.genericParameters != null) addSuperinterface(ISpecializable::class)
+//    if (sparseInterface.genericParameters != null) addSuperinterface(ISpecializable::class)
 }
 
 private fun traverseSuperInterfaces(sparseInterface: SparseInterface): Set<SparseTypeReference> {
@@ -724,7 +715,7 @@ private fun TypeSpec.Builder.generateParameterizedByReference(sparseInterface: S
 
         val setValueFn = FunSpec.builder("setValue").apply {
             addParameter("value", sparseInterface.asTypeReference().asGenericTypeParameter())
-            addCode("pointer = value.%L", sparseInterface.pointerName())
+            addCode("pointer = value.%L!!", sparseInterface.pointerName())
         }.build()
         addFunction(setValueFn)
 
@@ -1039,16 +1030,15 @@ private fun CodeBlock.Builder.generateInterfaceMethodBody(
     addStatement("val fnPtr = ${sparseInterface.vtblName()}!!.getPointer(${index + 6}L * %M)", pointerSize)
     addStatement("val fn = %T.getFunction(fnPtr, %M)", JNAFunction::class, stdConvention)
 
-
     if (!method.returnType.isVoid()) {
-        val nullable = if (method.returnType.copy(isArray = false).isPrimitiveSystemType()) {
+        val outArrayType = if (method.returnType.copy(isArray = false).isPrimitiveSystemType()) {
             "Primitive"
         } else {
             ""
         }
         if (method.returnType.isArray) {
             addStatement(
-                "val result = make${nullable}OutArray<%T>()",
+                "val result = make${outArrayType}OutArray<%T>()",
                 method.returnType.copy(isArray = false, isReference = false).asGenericTypeParameter()
             )
         } else {

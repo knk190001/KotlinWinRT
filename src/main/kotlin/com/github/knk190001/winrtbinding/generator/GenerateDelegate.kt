@@ -9,7 +9,6 @@ import com.github.knk190001.winrtbinding.runtime.IByReference
 import com.github.knk190001.winrtbinding.runtime.WinRTByReference
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.jvm.jvmOverloads
 import com.sun.jna.Memory
 import com.sun.jna.Native
 import com.sun.jna.NativeMapped
@@ -20,9 +19,23 @@ import com.sun.jna.ptr.ByReference
 import com.sun.jna.win32.StdCallLibrary.StdCallCallback
 
 fun generateDelegate(
-    sd: SparseDelegate,
-    lookUpTypeReference: LookUp,
-    projectType: (IDirectProjectable<*>, List<SparseGenericParameter>) -> Unit
+    sparseDelegate: SparseDelegate
+): FileSpec {
+    if (sparseDelegate.parameterized) {
+        return if (sparseDelegate.asTypeReference().isClosed()) {
+            generateProjections(sparseDelegate)
+            generateClosedDelegate(sparseDelegate)
+        } else {
+            val cleanName = sparseDelegate.asTypeReference().cleanName()
+            generateGenericDelegate(sparseDelegate.withName(cleanName))
+        }
+    }
+    generateProjections(sparseDelegate)
+    return generateNonGenericDelegate(sparseDelegate)
+}
+
+fun generateNonGenericDelegate(
+    sd: SparseDelegate
 ) = FileSpec.builder(sd.namespace, sd.name).apply {
     addImports()
     if (sd.genericParameters != null &&
@@ -30,7 +43,7 @@ fun generateDelegate(
     ) {
         return generateGenericDelegateInterface(sd.withName(sd.name.replaceAfter('`', "").dropLast(1)))
     }
-    generateProjections(sd, lookUpTypeReference, projectType)
+    generateProjections(sd)
     val delegateTypeName = ClassName(sd.namespace, sd.name)
     val delegateParameters = sd.parameters.map {
         ParameterSpec.builder(
@@ -88,7 +101,7 @@ fun generateGenericDelegateInterface(sd: SparseDelegate): FileSpec {
     }.build()
 }
 
-fun TypeSpec.Builder.addTypeParameters(sd: SparseDelegate) {
+private fun TypeSpec.Builder.addTypeParameters(sd: SparseDelegate) {
     sd.genericParameters!!
         .map(SparseGenericParameter::name)
         .map(TypeVariableName::invoke)
@@ -104,7 +117,7 @@ private fun FileSpec.Builder.addImports() {
     addImport("com.github.knk190001.winrtbinding.runtime", "iUnknownIID")
 }
 
-fun TypeSpec.Builder.generateInvokeFunction(sd: SparseDelegate) {
+private fun TypeSpec.Builder.generateInvokeFunction(sd: SparseDelegate) {
     val invokeFn = FunSpec.builder("invoke").apply {
         if (sd.genericParameters != null) {
             addModifiers(KModifier.OVERRIDE)
@@ -179,7 +192,8 @@ private fun TypeSpec.Builder.generateCompanion(
     delegateTypeName: ClassName
 ) {
     val companionObj = TypeSpec.companionObjectBuilder().apply {
-        val createFn = FunSpec.builder("create").apply {
+        val createFn = FunSpec.builder("invoke").apply {
+            addModifiers(KModifier.OPERATOR)
             addParameter("fn", ClassName(sd.namespace, "${sd.name}Body"))
             returns(delegateTypeName)
 
@@ -277,7 +291,6 @@ private fun TypeSpec.Builder.generateCompanion(
             addCode(cb)
         }.build()
         addFunction(createFn)
-
     }.build()
     addType(companionObj)
 }
@@ -310,10 +323,8 @@ private fun TypeSpec.Builder.generateNativeInterface(sd: SparseDelegate) {
     addType(nativeInterface)
 }
 
-private fun generateProjections(
-    sd: SparseDelegate,
-    lookUpTypeReference: LookUp,
-    projectType: (IDirectProjectable<*>, List<SparseGenericParameter>) -> Unit
+fun generateProjections(
+    sd: SparseDelegate
 ) {
     sd.parameters.forEach {
         if (it.type.genericParameters != null) {

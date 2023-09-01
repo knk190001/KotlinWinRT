@@ -75,7 +75,7 @@ fun generateProjection(): Collection<FileSpec> {
             is SparseInterface -> generateInterface(it, lookUp, projectInterface)
             is SparseEnum -> generateEnum(it)
             is SparseStruct -> generateStruct(it)
-            is SparseDelegate -> generateDelegate(it, lookUp, projectInterface)
+            is SparseDelegate -> generateDelegate(it)
 
             else -> throw InvalidObjectException("Object is not of type sparse class or sparse interface.")
         }
@@ -122,7 +122,7 @@ private fun generateProjectedTypes(
         }
         when (projectedInterface) {
             is SparseInterface -> generateInterface(projectedInterface, lookUpTypeReference, projectInterface)
-            is SparseDelegate -> generateDelegate(projectedInterface, lookUpTypeReference, projectInterface)
+            is SparseDelegate -> generateDelegate(projectedInterface)
             else -> throw NotImplementedError()
         }
     }.toMutableList().apply {
