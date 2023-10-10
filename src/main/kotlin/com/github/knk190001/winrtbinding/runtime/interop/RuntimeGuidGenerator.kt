@@ -1,10 +1,11 @@
-package com.github.knk190001.winrtbinding.runtime
+package com.github.knk190001.winrtbinding.runtime.interop
 
 import com.github.knk190001.winrtbinding.generator.guidToSignatureFormat
-import com.github.knk190001.winrtbinding.runtime.interfaces.*
+import com.github.knk190001.winrtbinding.runtime.annotations.GenericType
+import com.github.knk190001.winrtbinding.runtime.annotations.Signature
+import com.github.knk190001.winrtbinding.runtime.base.Delegate
+import com.github.knk190001.winrtbinding.runtime.com.*
 import com.sun.jna.Structure
-import com.sun.jna.platform.win32.Guid
-import com.sun.jna.platform.win32.Guid.GUID
 import com.sun.jna.platform.win32.Guid.IID
 import com.sun.jna.platform.win32.WinDef
 import com.sun.jna.platform.win32.WinDef.UINT
@@ -12,10 +13,9 @@ import com.sun.jna.platform.win32.WinDef.ULONG
 import memeid.UUID
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
-import kotlin.reflect.KTypeProjection
 import kotlin.reflect.full.*
 import kotlin.reflect.typeOf
-import com.github.knk190001.winrtbinding.runtime.Guid as GuidAnnotation
+import com.github.knk190001.winrtbinding.runtime.annotations.Guid as GuidAnnotation
 
 private val wrtPinterfaceNamespaceJava = UUID.fromString("11f47ad5-7b73-42c0-abae-878b1e16adee")
 
@@ -51,7 +51,7 @@ object RuntimeGuidGenerator {
                 typeOf<Long>() -> "i8"
                 typeOf<Float>() -> "f4"
                 typeOf<WinDef.USHORT>() -> "u2"
-                typeOf<WinDef.UINT>() -> "u4"
+                typeOf<UINT>() -> "u4"
                 typeOf<ULONG>() -> "u8"
                 else -> {
                     if (type.isSubtypeOf(typeOf<Enum<*>>()) || type.isSubtypeOf(typeOf<Structure>())) {
@@ -70,7 +70,7 @@ object RuntimeGuidGenerator {
                     type.arguments.joinToString(";") { getSignature(it.type!!) }
                 })"
             }
-            if (type.isSubtypeOf(typeOf<Delegate<*>>())) {
+            if (type.isSubtypeOf(typeOf<Delegate>())) {
                 return "delegate({${type.annotationOfType<GuidAnnotation>()!!.guid.guidToSignatureFormat()}})"
             }
             if (!type.isSubtypeOf(typeOf<IWinRTObject>())) {
@@ -108,11 +108,11 @@ private fun KType.isValueType(): Boolean {
         Short::class -> return true
         Int::class -> return true
         Long::class -> return true
-        WinDef.UINT::class -> return true
+        UINT::class -> return true
         Float::class -> return true
         WinDef.USHORT::class -> return true
         UINT::class -> return true
-        WinDef.ULONG::class -> return true
+        ULONG::class -> return true
         else -> {}
     }
     return (classifier as KClass<*>).isSubclassOf(Enum::class) ||

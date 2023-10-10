@@ -1,10 +1,10 @@
-package com.github.knk190001.winrtbinding.runtime
+package com.github.knk190001.winrtbinding.runtime.interop
 
+import com.github.knk190001.winrtbinding.runtime.getValue
 import com.sun.jna.Pointer
 import com.sun.jna.platform.win32.WinDef.UINT
 import com.sun.jna.ptr.PointerByReference
 import java.lang.reflect.Array.newInstance as jvmNewArrayInstance
-
 
 abstract class AbstractOutArray<T>(val clazz: Class<*>) :PointerByReference(){
     abstract val arrayPtr: Pointer
@@ -13,7 +13,7 @@ abstract class AbstractOutArray<T>(val clazz: Class<*>) :PointerByReference(){
     abstract val size:Int
 }
 
-class OutArray<T> (clazz: Class<T>) :AbstractOutArray<T?>(clazz) {
+class OutArray<T> (clazz: Class<T>) : AbstractOutArray<T?>(clazz) {
     override val arrayPtr: Pointer
         get() = value
 

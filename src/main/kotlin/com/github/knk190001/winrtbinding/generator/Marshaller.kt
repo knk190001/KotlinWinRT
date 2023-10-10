@@ -236,21 +236,6 @@ object GenericDelegateMarshalGenerator : IPtrMarshalGenerator {
     override val managedType: KClass<*> = Any::class
 }
 
-object TypeVariableMarshalGenerator : IMarshalGenerator {
-    override fun generateToNativeMarshalCode(varName: String, type: SparseTypeReference?): Pair<String, CodeBlock> {
-        TODO("Not yet implemented")
-    }
-
-    override fun generateFromNativeMarshalCode(varName: String, type: SparseTypeReference?): Pair<String, CodeBlock> {
-        TODO("Not yet implemented")
-    }
-
-    override val nativeType: ClassName
-        get() = TODO("Not yet implemented")
-    override val managedType: KClass<*>
-        get() = TODO("Not yet implemented")
-
-}
 
 
 object WinRTInterface

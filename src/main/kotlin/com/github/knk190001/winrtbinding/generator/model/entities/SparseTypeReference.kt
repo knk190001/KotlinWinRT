@@ -87,6 +87,9 @@ data class SparseTypeReference(
     fun isSystemType(): Boolean {
         return namespace == "System" && name != "Object"
     }
+    fun isSystemTypeOrObject(): Boolean {
+        return namespace == "System"
+    }
 
     fun isPrimitiveSystemType(): Boolean {
         return isSystemType() && name != "String" && name != "Guid" && !isArray

@@ -1,30 +1,33 @@
-package com.github.knk190001.winrtbinding.runtime.interfaces
+package com.github.knk190001.winrtbinding.runtime.base
 
+import com.github.knk190001.winrtbinding.runtime.com.IUnknownVtbl
 import com.sun.jna.*
 import com.sun.jna.Structure.FieldOrder
-import com.sun.jna.platform.win32.COM.Unknown
 import com.sun.jna.platform.win32.Guid.GUID
 import com.sun.jna.platform.win32.WinDef
 import com.sun.jna.platform.win32.WinDef.UINT
 import com.sun.jna.platform.win32.WinNT.HRESULT
-import com.sun.jna.win32.StdCallLibrary.StdCallCallback
 
-open class Delegate<T : StdCallCallback>(ptr: Pointer? = Memory(12)) : PointerType(ptr) {
-    val delegateStruct by lazy { DelegateVtbl<T>(pointer.getPointer(0)) }
+open class Delegate(ptr: Pointer? = Memory(12)) : PointerType(ptr) {
+    val delegateStruct by lazy { DelegateVtbl.ByReference(pointer.getPointer(0)) }
 
-    class ByReference <T : StdCallCallback>  : com.sun.jna.ptr.ByReference(Native.POINTER_SIZE) {
-        fun setValue(delegate: Delegate<T>) {
-            this.pointer.setPointer(0,delegate.pointer)
+    class ByReference  : com.sun.jna.ptr.ByReference(Native.POINTER_SIZE) {
+        fun setValue(delegate: Delegate) {
+            this.pointer.setPointer(0, delegate.pointer)
         }
 
-        fun getValue(): Delegate<T> {
+        fun getValue(): Delegate {
             return Delegate(this.pointer.getPointer(0))
         }
     }
 
-    fun init(uuids: List<GUID>, fn: T) {
+    fun init(uuids: List<GUID>, fn: Callback) {
+        init(uuids, CallbackReference.getFunctionPointer(fn))
+    }
+
+    fun init(uuids: List<GUID>, fn: Pointer) {
         val memory = Memory(Native.getNativeSize(DelegateVtbl.ByValue::class.java).toLong())
-        val vtbl = DelegateVtbl<T>(memory)
+        val vtbl = DelegateVtbl.ByReference(memory)
 
         pointer.setPointer(0, memory)
         pointer.setInt(Native.POINTER_SIZE.toLong(), 1)
@@ -57,9 +60,9 @@ open class Delegate<T : StdCallCallback>(ptr: Pointer? = Memory(12)) : PointerTy
     }
 
     @FieldOrder("iUnknownVtbl", "fn")
-    open class DelegateVtbl<T : StdCallCallback>(ptr: Pointer?) : Structure(ptr) {
-        class ByValue<T: StdCallCallback>(ptr: Pointer?) : DelegateVtbl<T>(ptr), Structure.ByValue
-        class ByReference<T: StdCallCallback>(ptr: Pointer?) : DelegateVtbl<T>(ptr), Structure.ByReference
+    sealed class DelegateVtbl(ptr: Pointer?) : Structure(ptr) {
+        class ByValue(ptr: Pointer?) : DelegateVtbl(ptr), Structure.ByValue
+        class ByReference(ptr: Pointer?) : DelegateVtbl(ptr), Structure.ByReference
         init {
             autoRead = true
             autoWrite = true
@@ -69,6 +72,6 @@ open class Delegate<T : StdCallCallback>(ptr: Pointer? = Memory(12)) : PointerTy
         var iUnknownVtbl: IUnknownVtbl? = null
 
         @JvmField
-        var fn: T? = null
+        var fn: Pointer? = null
     }
 }

@@ -35,4 +35,6 @@ data class SparseClass(
         traits.filterIsInstance<FactoryActivationTrait>()
             .flatMap{ it.factoryTypes }
     }
+
+    val hasCompositionActivator = traits.filterIsInstance<CompositionActivationTrait>().any()
 }

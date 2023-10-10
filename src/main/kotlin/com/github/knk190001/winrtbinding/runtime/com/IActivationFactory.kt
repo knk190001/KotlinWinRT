@@ -1,4 +1,4 @@
-package com.github.knk190001.winrtbinding.runtime.interfaces
+package com.github.knk190001.winrtbinding.runtime.com
 
 import com.sun.jna.Callback
 import com.sun.jna.Pointer
@@ -16,7 +16,7 @@ class IActivationFactory(val ptr: Pointer? = Pointer.NULL) : Structure(ptr!!.get
     }
 
     @JvmField
-    var iInspectable: IInspectable? = null
+    var iInspectable: IInspectableVtbl? = null
 
     @JvmField
     var activateInstance: ActivateInstance? = null

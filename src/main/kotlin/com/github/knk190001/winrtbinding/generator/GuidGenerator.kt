@@ -36,8 +36,8 @@ object GuidGenerator {
                         return "enum(${tr.namespace}.${tr.name};${if (declaration.isFlagEnum) "u4" else "i4"})"
                     }
                     if (declaration is SparseStruct) {
-                        val fields = declaration.fields.sortedBy { it.index }.map { getSignature(it.type, lookup) }
-                            .joinToString(separator = ";")
+                        val fields = declaration.fields.sortedBy { it.index }
+                            .joinToString(separator = ";") { getSignature(it.type, lookup) }
                         return "struct(${tr.namespace}.${tr.name};${fields})"
                     }
                     throw IllegalArgumentException("Invalid Value type")
@@ -67,7 +67,7 @@ object GuidGenerator {
 
 
     private val wrtPinterfaceNamespaceJava = UUID.fromString("11f47ad5-7b73-42c0-abae-878b1e16adee")
-    fun CreateIID(type: SparseTypeReference, lookup: LookUp): GUID? {
+    fun createIID(type: SparseTypeReference, lookup: LookUp): GUID? {
         val signature: String = getSignature(type, lookup)
         return UUID.V5.from(wrtPinterfaceNamespaceJava, signature).toString()
             .let { GUID.fromString(it) }

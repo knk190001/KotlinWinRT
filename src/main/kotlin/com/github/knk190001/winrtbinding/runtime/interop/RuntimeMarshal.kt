@@ -1,8 +1,9 @@
-package com.github.knk190001.winrtbinding.runtime
+package com.github.knk190001.winrtbinding.runtime.interop
 
+import com.github.knk190001.winrtbinding.runtime.handleToString
+import com.github.knk190001.winrtbinding.runtime.toHandle
 import com.sun.jna.Pointer
 import com.sun.jna.platform.win32.WinNT.HANDLE
-import kotlin.reflect.KClass
 import kotlin.reflect.KType
 import kotlin.reflect.full.withNullability
 import kotlin.reflect.typeOf

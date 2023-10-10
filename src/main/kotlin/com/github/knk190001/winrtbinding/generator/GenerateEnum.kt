@@ -6,12 +6,16 @@ import com.sun.jna.FromNativeContext
 import com.sun.jna.NativeMapped
 import com.sun.jna.ptr.ByReference
 import com.github.knk190001.winrtbinding.generator.model.entities.SparseEnum
-import com.github.knk190001.winrtbinding.runtime.IByReference
-import com.github.knk190001.winrtbinding.runtime.WinRTByReference
+import com.github.knk190001.winrtbinding.runtime.interop.IByReference
+import com.github.knk190001.winrtbinding.runtime.annotations.WinRTByReference
+import com.github.knk190001.winrtbinding.runtime.base.IABI
+import com.squareup.kotlinpoet.MemberName.Companion.member
+import java.lang.foreign.ValueLayout
 
 fun generateEnum(sEnum : SparseEnum): FileSpec {
     val fileSpec = FileSpec.builder(sEnum.namespace, sEnum.name)
     val type = TypeSpec.enumBuilder(sEnum.name).apply {
+        addABIAnnotation(sEnum.asTypeReference().asClassName())
         addSignatureAnnotation(sEnum)
         addSuperinterface(NativeMapped::class)
         primaryConstructor(
@@ -90,7 +94,51 @@ fun generateEnum(sEnum : SparseEnum): FileSpec {
         addFunction(nativeTypeSpec)
         addProperty(PropertySpec.builder("value",Int::class).initializer("value").build())
         addType(byRefSpec)
+        generateABI(sEnum)
     }.build()
     fileSpec.addType(type)
     return fileSpec.build()
+}
+
+private fun TypeSpec.Builder.generateABI(sparseEnum: SparseEnum) {
+    val abi = TypeSpec.objectBuilder("ABI").apply {
+        addSuperinterface(
+            IABI::class.asClassName().parameterizedBy(
+                sparseEnum.asTypeReference().asClassName(),
+                Int::class.asClassName()
+            )
+        )
+        addFromNative(sparseEnum)
+        addLayoutProperty()
+        addToNative(sparseEnum)
+    }.build()
+    addType(abi)
+}
+
+private fun TypeSpec.Builder.addToNative(sparseEnum: SparseEnum) {
+    val toNative = FunSpec.builder("toNative").apply {
+        addModifiers(KModifier.OVERRIDE)
+        addParameter("obj", sparseEnum.asTypeReference().asClassName())
+        returns(Int::class)
+        addStatement("return obj.value")
+    }.build()
+    addFunction(toNative)
+}
+
+private fun TypeSpec.Builder.addLayoutProperty() {
+    val layoutProperty  = PropertySpec.builder("layout", ValueLayout::class).apply {
+        addModifiers(KModifier.OVERRIDE)
+        initializer("%M", ValueLayout::class.asClassName().member("JAVA_INT"))
+    }.build()
+    addProperty(layoutProperty)
+}
+
+private fun TypeSpec.Builder.addFromNative(sparseEnum: SparseEnum) {
+    val fromNative = FunSpec.builder("fromNative").apply {
+        addModifiers(KModifier.OVERRIDE)
+        addParameter("value", Int::class)
+        addStatement("return ${sparseEnum.name}.values()[0].fromNative(value, null)".fixSpaces())
+        returns(sparseEnum.asTypeReference().asClassName())
+    }.build()
+    addFunction(fromNative)
 }

@@ -31,7 +31,7 @@ kotlin {
 tasks.withType<KotlinCompile> {
     kotlinOptions {
         jvmTarget = "19"
-        freeCompilerArgs = listOf("-Xjvm-default=all-compatibility", "-Xallow-jvm-ir-dependencies")
+        freeCompilerArgs = listOf("-Xjvm-default=all-compatibility")
     }
 }
 
@@ -39,6 +39,7 @@ tasks.withType<KotlinCompile> {
 dependencies {
     implementation(kotlin("stdlib"))
     api("com.squareup:kotlinpoet:1.12.0")
+    api("com.headius:invokebinder:1.13")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
     implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.21")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")

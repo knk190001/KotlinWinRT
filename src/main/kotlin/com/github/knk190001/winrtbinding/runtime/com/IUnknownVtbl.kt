@@ -1,6 +1,7 @@
-package com.github.knk190001.winrtbinding.runtime.interfaces
+package com.github.knk190001.winrtbinding.runtime.com
 
 import com.sun.jna.Callback
+import com.sun.jna.Native
 import com.sun.jna.Pointer
 import com.sun.jna.Structure
 import com.sun.jna.Structure.FieldOrder
@@ -44,5 +45,9 @@ class IUnknownVtbl(ptr: Pointer? = Pointer.NULL) : Structure(ptr) {
     }
     fun release(thisPtr: Pointer): ULONG {
         return release!!(thisPtr)
+    }
+
+    companion object {
+        val SIZE = Native.getNativeSize(IUnknownVtbl::class.java)
     }
 }
